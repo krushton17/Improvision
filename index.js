@@ -499,23 +499,102 @@ let diagram = {
                 .attr('class', 'strings')
                 .attr('x1', 0)
                 .attr('x2', this.fretBoardWidth);
-        //create empty groups for notes, and a variable to store them
-        this.noteContainers = d3.selectAll('.stringContainer')
+        fretBoard
             .append('g')
-            .attr('class', 'noteContainer');
+                .attr('id', 'noteContainer')
         //resize fretboard whenever the window is resized
         window.addEventListener('resize', this.resize.bind(this));
         //set the initial size
         this.resize();
     },//end of diagram setup function
 
-    update: function(nextChord, currentDur, nextDur) {
+    update: function(nextChord, currentDur, nextDur, metaData) {
         //without this, it won't recognize this.xScale as a function
         let xScale = this.xScale;
+        let yScale = this.yScale;
         //signature == unique identifier for each note object
         let keyFunc = function(d) {
             return ++randomizer;;
         }
+
+        let noteSet = d3.select('#noteContainer').selectAll('g')
+            .data([metaData], keyFunc)
+            .enter().append('g')
+
+        noteSet
+            .attr('class', 'noteSet')
+            .style('opacity', 0)
+            .transition()
+                .duration(function(d) {
+                    console.log(d)
+                    return d.currentDur;
+                })
+                .on('start', function() {
+                    //move to back;
+                    //  keeps current chord's notes in front of next chord's notes
+                    var firstChild = this.parentNode.firstChild; 
+                    if (firstChild) { 
+                        this.parentNode.insertBefore(this, firstChild); 
+                    } 
+                }).style('opacity', .5)
+                .transition()
+                    .duration(0)
+                    .style('opacity', 1)
+                    .transition()
+                        .duration(function(d) {
+                            console.log(d)
+                            return d.nextDur;
+                        })
+                        .remove();
+
+        noteSet.selectAll('g')
+            .data(instrument.strings)
+            .enter().append('g')
+                .attr("transform", function(d, i) { return `translate(0,${yScale(i)})`})
+            .each(function(d) {
+                let notes = d3.select(this).selectAll('g')
+                    //switch to using the note data instead of string data
+                    .data(nextChord.fretMap[d])
+                    .enter().append('g')
+                    .attr("transform", function(d, i) { return `translate(${xScale(d.fret-.5)},0)`})
+
+                //append circles
+                notes.append('circle')
+                    .attr('class', function(d) {
+                        let noteClass = 'note';
+                        if (d.interval == 'uni') {
+                            noteClass += ' root'; 
+                        } else if (nextChord.guides.includes(d.interval)) {
+                            noteClass += ' guides';
+                        } else if (nextChord.auxExp.includes(d.interval)) {
+                            noteClass += ' auxExp';
+                        } else {
+                            noteClass += ' auxImp';
+                        }
+                        return noteClass;
+                    })
+                //append text
+                notes.append('text')
+                        .attr('class', 'text')
+                        .attr('y', 5)
+                       //convert to most readable language
+                        .text(function(d) {
+                            switch(d.interval) {
+                                case ('dim7'):
+                                    return '\u{00B0}7';
+                                case ('m3'):
+                                case ('M3'):
+                                    return '\u{0394}3';
+                                case ('m7'):
+                                case ('M7'):
+                                    return '7';
+                                case ('uni'):
+                                    return '1';
+                                default:
+                                    return d.interval;
+                            }
+                        })
+        /*
         //update notes for each string group
         this.noteContainers
             .data(instrument.strings)
@@ -559,7 +638,7 @@ let diagram = {
                                 .style('opacity', 1)
                                 .classed('toRemove', true);
                         });
-                    */
+                    
 
                 //append circles
                 entering.append('circle')
@@ -598,6 +677,7 @@ let diagram = {
                                     return d.interval;
                             }
                         })
+            */
         })//end of 'each' block
     },//end of update function
 
@@ -636,7 +716,7 @@ let timer = {
     counter: 0,
     sectionIndex: 0,
     componentIndex: 0,
-    currentComponent: {},
+    prevComponent: {},
     nextGUIel: undefined,
 
     //reset everything to zero; for use by the stop button
@@ -654,6 +734,8 @@ let timer = {
     //increment the counter and update the diagram
     repeat: function() {
         //if the counter == 0 (only true here if the song is just starting)
+        console.log(this.counter)
+        console.log(this.currentComponent);
         if (this.counter == 0) {
             //the first chord fades in with the count-in
             //'n.c.' doesn't do anything yet; just for future-proofing
@@ -670,12 +752,12 @@ let timer = {
             //returns the section as an array of components
             let currentSection = song.components[song.structure[this.sectionIndex]];
             //returns the current component
-            let nextComponent = currentSection[this.componentIndex];
+            let currentComponent = currentSection[this.componentIndex];
 
             //skip non-chord components ([.\|\n])
             let timeout = 0;
             //!!may need to check if nextComponent is undefined as well
-            while (typeof nextComponent.chord == 'undefined') {
+            while (typeof currentComponent.chord == 'undefined') {
                 //move to the next chord in the section
                 this.componentIndex ++;
                 //if this is the end of the section
@@ -693,7 +775,7 @@ let timer = {
                     //make sure to pull the component from the right section
                     currentSection = song.components[song.structure[this.sectionIndex]];
                 }
-                nextComponent = currentSection[this.componentIndex];
+                currentComponent = currentSection[this.componentIndex];
                 //avoid infinite loop in case of an error
                 timeout++;
                 if (timeout > currentSection.length) {
@@ -703,14 +785,14 @@ let timer = {
             }//end of while loop
 
             //returns an actual chord object that can be passed to the diagram
-            let currentChord = song.chordLibrary[this.currentComponent.chord];
-            let nextChord = song.chordLibrary[nextComponent.chord];
+            let prevChord = song.chordLibrary[this.prevComponent.chord];
+            let currentChord = song.chordLibrary[currentComponent.chord];
 
             //calculate the fade-in duration based on the (next?) chord's duration in beats
             //  multiplied by the number of counts per beat,
             //  multiplied by the tempo in milliseconds per count
-            let currentDur = this.currentComponent.duration*this.countsPerBeat*this.tempoMil;
-            let nextDur = nextComponent.duration*this.countsPerBeat*this.tempoMil;
+            let prevDur = this.prevComponent.duration*this.countsPerBeat*this.tempoMil;
+            let currentDur = currentComponent.duration*this.countsPerBeat*this.tempoMil;
             
             //^ these values are definitely correct
             /*
@@ -718,6 +800,7 @@ let timer = {
             console.log(this.componentIndex, currentChord, fadeIn, nextChord, chordDur);
             */
 
+            /*
             //remove the previous set of notes
             d3.selectAll('.toRemove').remove();
             //make the next chord fully opaque
@@ -725,11 +808,16 @@ let timer = {
             d3.selectAll('.next-chord')
                 .classed('next-chord', false)
                 .classed('toRemove', true);
+            */
 
             //update the diagram with the next chord
             //  currentDur never ends up being used but I'm keeping it just in case
-            diagram.update(nextChord, currentDur, nextDur);
-            
+            diagram.update(currentChord, prevDur, currentDur, {
+                prevDur: prevDur,
+                currentDur: currentDur
+            });
+            console.log('updated!');
+            /*
             //highlight the current chord in the GUI
             //!!hella glitchy--or is that just the diagram itself?
             if (typeof this.nextGUIel != 'undefined') {
@@ -739,9 +827,9 @@ let timer = {
             //queue the GUI element that matches the next chord
             this.nextGUIel = d3.select(`#section-${song.structure[this.sectionIndex]}`)
                 .select(`#chord-${this.componentIndex}`);
-
+            */
             //advance component from next to current
-            this.currentComponent = nextComponent;
+            this.prevComponent = currentComponent;
             //increment chord index
             this.componentIndex++;
         }
