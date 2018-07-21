@@ -274,86 +274,118 @@ class Song {
         this.timeSig = (function() {
             let timeSig = [];
             //numerator
-            timeSig[0] = +header[3].match(/^\d+/)[0];
+            let beatsPerMeasure = +header[3].match(/^\d+/)[0];
             //denominator
-            timeSig[1] = +header[3].match(/\d+$/)[0];
+            let beatUnits = +header[3].match(/\d+$/)[0];
             //swing boolean
-            timeSig[2] = header[4] && header[4] == 'swing' ? true : false;
-            return timeSig;
+            let swing = header[4] && header[4] == 'swing';
+            return {
+                beatsPerMeasure: beatsPerMeasure,
+                beatUnits: beatUnits,
+                swing: swing
+            };
         })();
-        this.structure = /;.*;/.exec(text)[0].slice(1,-1).split(',');
-        this.structRepeat = /:.*:/.exec(text)[0].slice(1,-1).split(',');
+        this.singleStruct = /;.*;/.exec(text)[0].slice(1,-1).split(',');
+        this.repeatStruct = /:.*:/.exec(text)[0].slice(1,-1).split(',');
         //sections: the general song structure/codas/repeating sections, etc.
         //!!for some reason, trying to match more than one letter with + or * produces an error...
-        let sections = text.match(/\w\[[^\[\]]+\]/g);
         //create empty variables to store iteration results
         this.components = {};
         let chordLibKeys = new Set();
-        this.lineBreaks = {};
         //iterate through sections, then through the chords, etc.
-        for (let i = 0; i < sections.length; i++) {
-            let label = sections[i].charAt(0);
-            let components = sections[i].slice(1).match(/\.*\||\.+|\n|[^\|\[\]\n.]+/g);
+        let sections = {};
+        //extract the text strings representing each section
+        let sectionStrings = text.match(/\w\[[^\[\]]+\]/g);
+        //loop through the sections and parse their components
+        for (let string of sectionStrings) {
+            //label = anything that comes before the [
+            let label = string.slice(0, string.indexOf('['));
+            //initialize empty array to hold the chord sequence
             let chordSeq = [];
-            let beatsLeft = this.timeSig[0];
-            this.lineBreaks[label] = [];
-            for (let j = 0; j < components.length; j++) {
-                //if the | is preceded by .'s, calculate duration by counting the .'s
-                //if the component is a line break, store the last chord's index
-                //  so the editor knows where to put the line breaks
-                //if (/\n/.test(components[j])) {
-                    this.lineBreaks[label].push(chordSeq.length);
-                //if the component contains a |
-                //} else 
-                if (/\|/.test(components[j])) {
-                    //add the beats left in the measure to the chord duration
-                    chordSeq[chordSeq.length-1]['duration'] += beatsLeft;
-                    //reset the number of beats for the next measure
-                    beatsLeft = this.timeSig[0]
-                //if the component is a . or series of .'s (but does not contain a |)
-                //!!more efficient way to evaluate this?    
-                } else if (/\.+/.test(components[j])) {
-                    //set the chord duration to the number of .'s
-                    let beats = components[j].match(/\.+/)[0].length;
-                    //in case there are more periods than should be allowed in a single measure
-                    if (beats >= this.timeSig[0]) {
-                        //act as though there were a | instead of .'s
-                        chordSeq[chordSeq.length-1]['duration'] += beatsLeft;
-                        beatsLeft = this.timeSig[0]
-                    } else {
-                        chordSeq[chordSeq.length-1]['duration'] += beats;
-                        beatsLeft -= beats;
-                        if (beatsLeft <=0) {
-                            beatsLeft = this.timeSig[0];
-                        }
+            //slice the string into lines
+            let lines = string.slice(string.indexOf('[')+1,-1).split('\n');
+            //loop through the lines
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                //slice the line into measures
+                let measures = line.slice(0,-1).split('|');
+                //loop through the measures
+                for (let j = 0; j < measures.length; j++) {
+                    let measure = measures[j];
+                    //divide the measure into its components
+                    //  the components are either chords or periods (.)
+                    let components = measure.match(/[^\.]+|\./g)
+                    //if there are no matches, create an empty array
+                    if (!components) {
+                        components = [];
                     }
-                //otherwise, the segment is a chord name; push it to the end of the chord sequence
-                //  the duration will be set on the next j pass
-                } else  if (!/\n/.test(components[j])) {
-                    //store the order and duration of the chords
-                    chordSeq[j] = { chord: components[j], duration: 0 };
-                    //queue the chord for later parsing
-                    chordLibKeys.add(components[j]);
+                    //if there is too much information in the measure, generate an error message
+                    if (components.length > this.timeSig.beatsPerMeasure) {
+                        console.log('This measure was truncated because it was too long!')
+                    }
+                    //set the length of the array to the number of beats in each measure
+                    components.length = this.timeSig.beatsPerMeasure;
+                    //loop through the components
+                    for (let component of components) {
+                        //for consistency, take out the periods
+                        if (component == '.') { component = undefined; }
+                        //add the components of this measure to the end of the chord sequence
+                        chordSeq.push(component)
+                    }
+                    measures[j] = components;
                 }
-            }//end of for loop for section components
-            //transfer local variable to object property
-            this.components[label] = components.map(function(e, i) {
-                if (typeof chordSeq[i] != 'undefined') {return chordSeq[i];}
-                return e;
-            });
+                lines[i] = measures;
+            }
+            //for translating the text into GUI elements
+            this.components[label] = lines;
+            //for the timer
+            sections[label] = chordSeq;
         }
-        //parse each unique chord in the song and store in this set;
-        //  diagram update will iterate through the song's components
-        //  to obtain the right references to the data in this set
-        this.chordLibrary = {};
-        for (let i of chordLibKeys) {
-            this.chordLibrary[i] = new Chord(i);
-        }
+        //generate raw chord sequences by beat for single-play and repeat modes
+        this.singleSeq = this.constructSequence(this.singleStruct, sections);
+        this.repeatSeq = this.constructSequence(this.repeatStruct, sections);
+        //generate a library of all unique chords and their intervals
+        this.chordLibrary = this.constructChordLib(sections);
     }//end of constructor
+
+    constructSequence(sectionOrder, sections) {
+        let constructedSeq = [];
+        for (let i = 0; i < sectionOrder.length; i++) {
+            let section = sections[sectionOrder[i]];
+            for (let chordSeq of section) {
+                constructedSeq.push(chordSeq);
+            }
+        }
+        return constructedSeq;
+    }//end of chord sequence constructor
+
+    constructChordLib(sections) {
+        let chordLibrary = {}
+        //set.add will skip duplicate values
+        let chordLibKeys = new Set();
+        //get the labels of all sections, then loop through them
+        let sectionLabels = Object.keys(sections);
+        for (let label of sectionLabels) {
+            //use the section labels to loop through the chord sequences
+            let sequence = sections[label];
+            for (let e of sequence) {
+                //skip undefined values
+                if (e) {
+                    //add each unique chord to the list of library keys
+                    chordLibKeys.add(e);
+                }
+            }
+        }
+        for (let key of chordLibKeys) {
+            //create an actual chord object and store it in the library object
+            chordLibrary[key] = new Chord(key);
+        }
+        return chordLibrary;
+    }//end of chord library constructor
 }//end of Song class declaration
 
 //DIAGRAM STUFF-------------------------------------------------------------------------------------------------------
-//fghgjgjh
+
 //instrument specs
 let instrument = {
     name: 'guitar',
@@ -365,9 +397,7 @@ let instrument = {
     shortenedString: false,
 }
 
-let timingCheck = false;
-
-//add a destructor function to delete the diagram if you change instruments?
+//add a function to change the diagram if you change instruments
 let diagram = {
     //reference numbers for overall diagram
     topMargin: 40,
@@ -750,7 +780,7 @@ let timer = {
         //now this is true at the beginning of any new chord
         if (this.counter == 0) {
             //returns the section as an array of components
-            let currentSection = song.components[song.structure[this.sectionIndex]];
+            let currentSection = song.components[song.singleStruct[this.sectionIndex]];
             //returns the current component
             let currentComponent = currentSection[this.componentIndex];
 
@@ -765,7 +795,7 @@ let timer = {
                     //move to the next section
                     this.sectionIndex++;
                     //if this was the last section
-                    if (this.sectionIndex >= song.structure.length) {
+                    if (this.sectionIndex >= song.singleStruct.length) {
                         //go back to the first section
                         //!!add a procedure for ending the song
                         this.sectionIndex = 0;
@@ -773,7 +803,7 @@ let timer = {
                     //start at the first chord in the next section
                     this.componentIndex = 0;
                     //make sure to pull the component from the right section
-                    currentSection = song.components[song.structure[this.sectionIndex]];
+                    currentSection = song.components[song.singleStruct[this.sectionIndex]];
                 }
                 currentComponent = currentSection[this.componentIndex];
                 //avoid infinite loop in case of an error
@@ -938,13 +968,13 @@ playBtn.addEventListener('click', timer.playPause.bind(timer));
 //FILE HANDLING------------------------------------------------------------------------------------------
 
 let contents = `(Summertime,Am,60,4/4,swing)
-;A,1,A,2;
-:A,A1:
-A[Am7|Bbm7|Bm7..BM7..|Cm7..CM7..|
-C#m7|Dm7|D#m7..D#M7..|E7|
+;A,B,C;
+:A,B:
+A[Am7|Bbm7|Bm7.BM7.|Cm7.CM7.|
+C#m7|Dm7|D#m7.D#M7.|E7|
 Fm7|F#7|G7|G#7|
-CM7..Am7..|D7..E7..|]
-B[Am7..D7..|Bm7..E7..|]
+CM7.Am7.|D7.E7.|]
+B[Am7.D7.|Bm7.E7.|]
 C[Am7||]`;
 
 let song = new Song(contents);
