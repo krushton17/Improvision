@@ -140,9 +140,6 @@ textarea {
     text-anchor: middle;
     stroke: none;
 }
-.next-chord {
-    opacity: .25;
-}
 
 /*GUI editor-----------------------------------------------*/
 .GUI-wrapper {
