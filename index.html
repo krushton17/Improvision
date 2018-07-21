@@ -1,0 +1,77 @@
+<html>
+<head>
+    <title>||: improvision :||</title>
+    <link rel='stylesheet' href='styles.css'>
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Cutive+Mono" rel="stylesheet">
+
+    <script src="d3.min.js" defer></script>
+    <script src="https://d3js.org/d3-timer.v1.min.js" defer></script>
+    <script src='sortable.js' defer></script>
+    <script src='index.js' defer></script></head>
+<body>
+    <div class='diagram'>
+        <span class='headContainer'>
+            <svg class='head'></svg>
+        </span><span class='fretContainer'>
+            <svg class='fretboard' class='draggable'></svg>
+        </span>
+    </div>
+    <div id='controlPanel'>
+        <input type='button' id='play/pause' value='play' class='button'>
+        Tempo: <input type='number' id='tempo' value='60'>
+        Time Signature: <input type='text' id='timeSig' value='4/4'>
+        Swing Beats: <input type='checkbox' id='swing-toggle'>
+        Count-in: <input type='number' id='count-in' value='4'>
+        <br>
+        <input type='text' id='timeMarquis' readonly> 
+    </div>
+    <div>
+        <span id='text-wrapper' class='GUI-wrapper'>
+            <span id='file-container'>
+                <label for='file-load'>Upload a song file</label>
+                <input type='file' id='file-load'>
+            </span>
+            <div>
+                    <textarea id='textEditor' value='CM7 Cm7 Cdim7'></textarea>
+                </div>
+        </span>
+        <span id='menu-wrapper' class='GUI-wrapper'>
+            <div class='drag-zone' id='chord-menu'></div>
+        </span>
+        <span id='tab-wrapper' class='GUI-wrapper'>
+            <table>
+                <tr>
+                    <td rowspan='2' id='special'>
+                        <span class='drag-zone' id='trash'>Trash</span>
+                        <span class='drag-zone' id='symbol-menu'>
+                            <span class='spacer-dot'></span>
+                            <span class='spacer-bar'></span>
+                        </span>
+                    </td>
+                    <td>Sections:</td>
+                    <td>Section order:</td>
+                    <td>Repeat mode order:</td>
+                    <td>Repeat toggle:</td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="tab">
+                            <!--this button currently doesn't do anything-->
+                            <input type='button' id='add-tab' value='+'>
+                        </span>
+                    </td>
+                    <td><input type='text' id='section-order'></td>
+                    <td><input type='text' id='repeat-order'></td>
+                    <td><input type='checkbox' id='repeat-toggle'></td>
+                </tr>
+            </table>
+        </span>
+        
+    </div>
+    <div>
+    <br>
+    <br>
+    </div>
+</body>
+</html>
