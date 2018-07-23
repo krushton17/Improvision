@@ -272,11 +272,13 @@ class Song {
         this.key = header[1];
         this.tempo = header[2];
         this.timeSig = (function() {
-            let timeSig = [];
             //numerator
             let beatsPerMeasure = +header[3].match(/^\d+/)[0];
             //denominator
             let beatUnits = +header[3].match(/\d+$/)[0];
+            if (beatUnits == 8) {
+                beatsPerMeasure /= 3;
+            }
             //swing boolean
             let swing = header[4] && header[4] == 'swing';
             return {
@@ -740,7 +742,7 @@ let timer = {
         //!!pull this from the textbox
         //if the time signature is in 8ths, 1 count per beat is enough
         //  otherwise 3 or 4, depending on whether swing == true
-        return song.timeSig.beatUnits == 8 ? 1 : song.timeSig.swing ? 3 : 4;
+        return song.timeSig.beatUnits == 8 || song.timeSig.swing ? 3 : 4;
     },
     //convert tempo to milliseconds (factoring in counts per beat)
     get tempoMil() {
@@ -766,7 +768,7 @@ let timer = {
         this.componentIndex = 0;
         this.currentComponent = {};
         this.nextGUIel = undefined;
-        this.countIn = document.getElementById('count-in').value;
+        this.countIn = -1*+document.getElementById('count-in').value;
         //!!remove the note containers themselves instead?
         d3.selectAll('.noteContainer').selectAll('*').remove();
     },//end of reset function
@@ -776,6 +778,7 @@ let timer = {
             //check each beat until a chord is found
             nextIndex = i + beat;
             //!!add branching for repeat vs. single play
+            //try this: nextIndex=(nextIndex+sequence.length)%sequence.length
             if (nextIndex > sequence.length) {
                 nextIndex -= sequence.length;
             }
@@ -786,13 +789,15 @@ let timer = {
         }
     },
 
-
     //increment the counter and update the diagram
     repeat: function() {
         //how to handle the count-in?
         //currently skips the first chord
+        if (this.countIn <= 0) {
+            return this.countIn++;
+        }
 
-        //this.marquis or whatever
+        this.marquis();
         //if it's a fraction of a beat, increment and skip to the next count
         if (this.counter % this.countsPerBeat != 0) {
             return ++this.counter;
@@ -847,43 +852,23 @@ let timer = {
     },//end of repeat function
 
     //display the count
-    //!!change this to count measured, not chord durations
-    //  right now this resets at the beginning of every chord
-    count: '',
-    timeMarquis: function() {
-        if (this.counter == 0) {
-            this.count = '1';
+    marquis: function() {
+        let count = this.counter % (song.timeSig.beatsPerMeasure*this.countsPerBeat);
+        let subCount = count % this.countsPerBeat;
+        let marquis;
+        if (count == 0) {
+            marquis = '1';
             this.metronome.play();
+            document.getElementById('timeMarquis').value = '';
+        } else if (subCount == 0) {
+            marquis = (count/this.countsPerBeat+1);
+            this.metronome.play();
+        } else if (subCount % 2 == 0 && song.timeSig.beatUnits !=8 && ! song.timeSig.swing) {
+            marquis = '&';
         } else {
-            //if using swing beats
-            if (song.timeSig[2] || song.timeSig[1] == 8) {
-                //if the counter falls on a downbeat
-                if (this.counter%3 == 0) {
-                    this.count += this.counter/3+1;
-                    this.metronome.play();
-                //if the counter falls on an upbeat
-                } else if ((this.counter+1)%3 == 0) {
-                    this.count += ':';
-                //counter falls on the first tripled 8th note
-                } else {
-                    this.count += '.';
-                }
-            //if not using swing beats
-            } else {
-                //if the counter falls on a downbeat
-                if (this.counter%4 == 0) {
-                    this.count += this.counter/4+1;
-                    this.metronome.play();
-                //if the counter falls on an upbeat
-                } else if (this.counter%2 == 0) {
-                    this.count += ':';
-                //counter falls on a sixteenth note
-                } else {
-                    this.count += '.';
-                }
-            }
+            marquis = '.'
         }
-        document.getElementById('timeMarquis').value = this.count;
+        document.getElementById('timeMarquis').value += marquis;
     },//end of timeMarquis function
 
     paused: true,
@@ -944,7 +929,7 @@ playBtn.addEventListener('click', timer.playPause.bind(timer));
 
 //FILE HANDLING------------------------------------------------------------------------------------------
 
-let contents = `(Summertime,Am,60,4/4,swing)
+let contents = `(Summertime,Am,60,6/8,)
 ;A,B,C;
 :A,B:
 A[Am7|Bbm7|Bm7.BM7.|Cm7.CM7.|
@@ -990,6 +975,7 @@ let sortable2 = new Sortable(document.querySelector('#sortable2'), {
 });
 */
 
+/*
 let editorGUI = {
     dragBoxes: [],
     setup: function() {
@@ -1103,7 +1089,7 @@ function tabChange(evt, tabID) {
 }
 
 editorGUI.setup();
-
+*/
 
 //DEPRECATED INPUT STUFF--------------------------------------------------------------------------------
 
