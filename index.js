@@ -311,11 +311,11 @@ class Song {
                     //set the length of the array to the number of beats in each measure
                     components.length = this.timeSig.beatsPerMeasure;
                     //loop through the components
-                    for (let component of components) {
+                    for (let i = 0; i < components.length; i++) {
                         //for consistency, take out the periods
-                        if (component == '.') { component = undefined; }
+                        if (components[i] == '.') { components[i] = undefined; }
                         //add the components of this measure to the end of the chord sequence
-                        chordSeq.push(component)
+                        chordSeq.push(components[i])
                     }
                     measures[j] = components;
                 }
@@ -385,9 +385,9 @@ let instrument = {
 //add a function to change the diagram if you change instruments
 let diagram = {
     //reference numbers for overall diagram
-    topMargin: 40,
-    bottomMargin: 60,
-    sideMargin: 30,
+    topPadding: 40,
+    bottomPadding: 60,
+    sidePadding: 30,
     //reference numbers for x axis
     fretWidth: 100,
     nutPos: 50,
@@ -406,7 +406,7 @@ let diagram = {
     get yScale() {
         return d3.scaleLinear()
             .domain([0, instrument.strings.length -1])
-            .range([this.topMargin + this.height, this.topMargin])
+            .range([this.topPadding + this.height, this.topPadding])
     },
     //set up the blank diagram
     setup: function() {
@@ -414,13 +414,16 @@ let diagram = {
         let xScale = this.xScale;
         let yScale = this.yScale;
         //set diagram height to hide scrollbar on fretboard
-        d3.select('.diagram')
-            .style('height', this.height + this.topMargin + this.bottomMargin)
+        d3.select('#diagram')
+            .style('height', this.height + this.topPadding + this.bottomPadding)
+        //!!store diagram height in variable for cleaner code
+        d3.select('#main-content')
+            .style('padding-top', this.height + this.topPadding + this.bottomPadding)
 
         //create head
         let head = d3.select('.head')
             .attr('width', this.nutPos)
-            .attr('height', this.height + this.topMargin + this.bottomMargin)
+            .attr('height', this.height + this.topPadding + this.bottomPadding)
         //create groups for each string label
         let stringLabels = head.selectAll('g')
                 .data(instrument.strings)
@@ -453,7 +456,7 @@ let diagram = {
         //create fretboard
         d3.select('.fretContainer')
             //extra height allows for hidden scrollbar
-            .style('height', this.height + this.topMargin + this.bottomMargin*2)
+            .style('height', this.height + this.topPadding + this.bottomPadding*2)
             .style('width', document.documentElement.clientWidth - this.nutPos)
             .style('overflow-x', 'scroll')
             .style('overflow-y', 'hidden')
@@ -461,7 +464,7 @@ let diagram = {
         let fretBoard = d3.select('.fretboard');
         //set fretBoard dimensions
         fretBoard.attr('width', this.fretBoardWidth)
-            .attr('height', this.height + this.topMargin + this.bottomMargin)
+            .attr('height', this.height + this.topPadding + this.bottomPadding)
             .attr('left', this.nutPos);
         //add color markers for key frets
         fretBoard
@@ -475,7 +478,7 @@ let diagram = {
                 })
                 .attr('x', function(d) { return xScale(d-1);})
                 .attr('width', this.fretWidth + 3)
-                .attr('y', this.topMargin)
+                .attr('y', this.topPadding)
                 .attr('height', this.stringSpacing*(instrument.strings.length-1));
         //add lines for frets
         fretBoard
@@ -635,8 +638,8 @@ let diagram = {
         //delay period minimizes resizing artifacts
         clearInterval(this.resizeTimer);
         this.resizeTimer = setTimeout(() => {
-                //!magic number 10 == left margin of diagram tag
-            d3.select('.fretContainer').style('width', document.documentElement.clientWidth - this.nutPos - this.sideMargin - 10 + 'px')
+                //!magic number 10 == left padding of diagram tag
+            d3.select('.fretContainer').style('width', document.documentElement.clientWidth - this.nutPos - this.sidePadding)
         }, 100);
     }//end of resize function
 }//end of diagram class definition
@@ -708,16 +711,18 @@ let timer = {
         let nextIndex = this.findNextChord(sequence, beat);
         let nextChord = song.chordLibrary[sequence[nextIndex]];
         let beatsToNext = nextIndex - beat;
-        if (beatsToNext < 0) {
-            beatsToNext += sequence.length;
-        }
+        beatsToNext %= sequence.length;
+        //if (beatsToNext < 0) {
+        //    beatsToNext += sequence.length;
+        //}
 
         //look for the following chord to set the timeout
         let nextNextIndex = this.findNextChord(sequence, nextIndex);
         let nextDuration = nextNextIndex - nextIndex;
-        if (nextDuration < 0) {
-            nextDuration += sequence.length;
-        }
+        nextDuration %= sequence.length;
+        //if (nextDuration < 0) {
+        //    nextDuration += sequence.length;
+        //}
 
         //calculate the fade-in and timeout and update the diagram with them
         let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
@@ -775,7 +780,7 @@ let timer = {
             marquis = '1';
             this.metronome.play();
             //clear the marquis
-            document.getElementById('timeMarquis').value = '';
+            document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
@@ -793,7 +798,7 @@ let timer = {
         }
 
         //append the text to the marquis textbox
-        document.getElementById('timeMarquis').value += marquis;
+        document.getElementById('counter').value += marquis;
     },//end of marquis function
 
     paused: true,
@@ -905,55 +910,68 @@ let sortable2 = new Sortable(document.querySelector('#sortable2'), {
 });
 */
 
-/*
+
 let editorGUI = {
     dragBoxes: [],
     setup: function() {
         //d3: instantiate GUI elements
+
+        //create chord menu
+        //!!works, but does not make the elements draggable
         let chordMenu = d3.select('#chord-menu')
-        for (let e in song.chordLibrary) {
+        for (let chord in song.chordLibrary) {
             chordMenu.append('span')
                 .attr('class', 'drag-chord')
-                .html(e);
+                .html(chord);
         }
         //add tabs and tab content for each section
-        for (let e in song.components) {
-            d3.select('.tab').append('input')
+        for (let section of Object.keys(song.components).sort()) {
+            
+            //tab selector button
+            d3.select('#tab-select').append('input')
                 .attr('type', 'button')
                 .attr('class', 'tab')
-                .attr('value', e)
-                .attr('contentedidtable', 'true')
-                .attr('onclick', `tabChange(event, 'section-${e}')`);
-            let div = d3.select('#tab-wrapper').append('div')
-                .attr('id', 'section-' + e)
+                .attr('value', section)
+                //this doesn't work
+                //add (right-click || touch-and-hold) event to edit
+                //.attr('contenteditable', 'true')
+                .attr('onclick', `tabChange(event, 'section-${section}')`);
+            
+            //tab content
+            let sectionDiv = d3.select('#tab-content-wrapper').append('div')
+                .attr('id', 'section-' + section)
                 .attr('class', 'tab-content')
             
-            let line;
-            for (let i = 0; i < song.components[e].length; i++) {
-                let comp = song.components[e][i];
-                //create one drag-zone for each line in the section
-                if (i == 0 || /\n/.test(comp)) {
-                    line = div.append('div')
-                        .attr('class', 'drag-zone')
-                        .attr('id', `section-${e}-line-${i}`)
-                }
-                if (/[\|.]/.test(comp)) {
-                    for (let j = 0; j < comp.length; j++) {
-                        line.append('div')
-                            .attr('class', function() {
-                                switch (comp.charAt(j)) {
-                                    case '.': return 'spacer-dot';
-                                    case '|': return 'spacer-bar';
-                                }
-                            });
+            for (let i = 0; i < song.components[section].length; i++) {
+                let line = song.components[section][i];
+                //add a sortable div for each line in the section
+                let lineBox = sectionDiv.append('div')
+                    .attr('class', 'drag-zone')
+                    .attr('id', `section-${section}-line-${i}`)
+                
+                for (let j = 0; j < line.length; j++) {
+                    let measure = line[j];
+
+                    let components = (
+                        measure.filter(String).length > 1 ||
+                        (measure.filter(String).length == 1 &&
+                            !measure[0])
+                    );
+                    
+                    for (let k = 0; k < measure.length; k++) {
+                        let component = measure[k];
+                        if (component) {
+                            lineBox.append('span')
+                                .attr('class', 'drag-chord')
+                                .html(component)
+                                .attr('id', `chord-${i}`);
+                        } else if (components) {
+                            lineBox.append('span')
+                                .attr('class', 'spacer-dot')
+                        }
                     }
-                //if the component is actually a chord
-                //!!use typeof comp.chord != 'undefined' instead?
-                } else if (!/\n/.test(comp)) {
-                    line.append('div')
-                        .attr('class', 'drag-chord')
-                        .html(comp.chord)
-                        .attr('id', `chord-${i}`)
+                    lineBox.append('span')
+                        .attr('class', 'spacer-bar');
                 }
             }
         }
@@ -1019,7 +1037,7 @@ function tabChange(evt, tabID) {
 }
 
 editorGUI.setup();
-*/
+
 
 //DEPRECATED BUT USEFUL--------------------------------------------------------------------------------
 /*

@@ -1,77 +1,105 @@
 <html>
 <head>
     <title>||: improvision :||</title>
+    <!-- styles & fonts -->
     <link rel='stylesheet' href='styles.css'>
     <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Cutive+Mono" rel="stylesheet">
-
+    <!-- scripts -->
     <script src="d3.min.js" defer></script>
     <script src="https://d3js.org/d3-timer.v1.min.js" defer></script>
     <script src='sortable.js' defer></script>
-    <script src='index.js' defer></script></head>
+    <script src='index.js' defer></script>
+</head>
 <body>
-    <div class='diagram'>
+    <!-- diagram -->
+    <div id='diagram'>
         <span class='headContainer'>
             <svg class='head'></svg>
         </span><span class='fretContainer'>
             <svg class='fretboard' class='draggable'></svg>
         </span>
     </div>
-    <div id='controlPanel'>
-        <input type='button' id='play/pause' value='play' class='button'>
-        Tempo: <input type='number' id='tempo' value='60'>
-        Time Signature: <input type='text' id='timeSig' value='4/4'>
-        Swing Beats: <input type='checkbox' id='swing-toggle'>
-        Count-in: <input type='number' id='count-in' value='4'>
-        <br>
-        <input type='text' id='timeMarquis' readonly> 
+<div id='main-content'>
+    <!-- song mode -->
+    <!-- playback dashboard -->
+    <div id='playback-dash'>
+        <input type='button' id='play/pause' value='play' class='button'>    
+        <label>Tempo:
+            <input type='number' id='tempo' value='60'>
+        </label>
+        <label>Time Signature:
+            <input type='text' id='time-sig' value='4/4'>
+        </label>
+        <label>Swing Beats:
+            <input type='checkbox' id='swing-toggle'>
+        </label>
+        <label>Count-in:
+             <input type='number' id='count-in' value='4'>
+        </label>
+        <label>Counter:
+            <input type='text' id='counter' readonly>
+        </label>
     </div>
-    <div>
-        <span id='text-wrapper' class='GUI-wrapper'>
-            <span id='file-container'>
+    <!-- song metadata -->
+    <hr class='divider'>
+    <div id='song-metadata'>
+        <label>Song Title:
+            <input type='text' id='title'>
+        </label>
+        <label>Songwriter:
+            <input type='text' id='writer'>
+        </label>
+        <label>Transcriber:
+            <input type='text' id='transcriber'>
+        </label>
+    </div>
+    <!-- song editor GUI -->
+    <div id='song-editor'>
+        <!-- chord menu -->
+        <span id='GUI-wrapper'>
+            <span id='chord-menu-wrapper'>
+                Chord Menu
+                <div class='drag-zone' id='chord-menu'></div>
+                Spacers
+                <div id='spacer-menu' class='drag-zone'>
+                    <span class='spacer-dot'></span>
+                    <span class='spacer-bar'></span>
+                <div id='trash' class='drag-zone'>Trash</div>    
+                </div>
+            </span>
+            <!-- section menu -->
+            <span id='section-wrapper'>
+                <div id='section-menu'>
+                    <fieldset id='tab-select'>
+                        <legend>Sections:</legend>
+                        <input type='button' id='add-tab' value='+'>
+                    </fieldset>
+                    <label>Section order:
+                        <input type='text' id='section-order'>     
+                    </label>
+                    <label>Repeat mode order:
+                        <input type='text' id='repeat-order'>
+                    </label>
+                    <label>Repeat toggle:
+                        <input type='checkbox' id='repeat-toggle'>
+                    </label>
+                </div>
+                <div id='tab-content-wrapper'></div>
+            </span>
+        </span>
+        <span id='editor-expander'>
+            <input type='button' id='editor-switch' value='<->'>
+        </span>
+        <!-- song text editor -->
+        <span id='text-wrapper'>
+            <div id='file-container'>
                 <label for='file-load'>Upload a song file</label>
                 <input type='file' id='file-load'>
-            </span>
-            <div>
-                    <textarea id='textEditor' value='CM7 Cm7 Cdim7'></textarea>
-                </div>
+            </div>
+            <textarea id='textEditor' value='CM7 Cm7 Cdim7'></textarea>
         </span>
-        <span id='menu-wrapper' class='GUI-wrapper'>
-            <div class='drag-zone' id='chord-menu'></div>
-        </span>
-        <span id='tab-wrapper' class='GUI-wrapper'>
-            <table>
-                <tr>
-                    <td rowspan='2' id='special'>
-                        <span class='drag-zone' id='trash'>Trash</span>
-                        <span class='drag-zone' id='symbol-menu'>
-                            <span class='spacer-dot'></span>
-                            <span class='spacer-bar'></span>
-                        </span>
-                    </td>
-                    <td>Sections:</td>
-                    <td>Section order:</td>
-                    <td>Repeat mode order:</td>
-                    <td>Repeat toggle:</td>
-                </tr>
-                <tr>
-                    <td>
-                        <span class="tab">
-                            <!--this button currently doesn't do anything-->
-                            <input type='button' id='add-tab' value='+'>
-                        </span>
-                    </td>
-                    <td><input type='text' id='section-order'></td>
-                    <td><input type='text' id='repeat-order'></td>
-                    <td><input type='checkbox' id='repeat-toggle'></td>
-                </tr>
-            </table>
-        </span>
-        
     </div>
-    <div>
-    <br>
-    <br>
-    </div>
+</div>
 </body>
 </html>

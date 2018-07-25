@@ -30,69 +30,22 @@ body {
     background-color: var(--main-bg-color);
     white-space: nowrap;
     overflow-x: hidden;
-}
-/*inputs-----------------------------------------------*/
-input, textarea {
-    -webkit-appearance: none;
-    cursor: pointer;
-    border: var(--input-border);
-    border-radius: var(--border-radius);
-    text-align: center;
-    padding: 5px;
-    margin: 5px;
-    font: inherit;
-    background-color: var(--input-bg-color);
-    color: var(--input-text-color);
-}
-input[type=checkbox] {
-    vertical-align: middle;
-    height: 32px;
-    width: 32px;
-}
-input[type=checkbox]:hover, input[type=button]:hover {
-    background-color: var(--input-hover-color);
-    cursor: pointer;
-}
-input[type=checkbox]:active input[type=button].active {
-    /*why doesn't this override the hover color?*/
-    background-color: var(--input-active-color) !important;
-}
-input[type=checkbox]:checked {
-    background-color: var(--input-active-color);
-}
-textarea, input[type=text], input[type=number] {
-    cursor: text;
-    background-color: var(--text-input-bg-color);
-    font: var(--mono-font);
-    color: var(--text-input-text-color);
-}
-textarea {
-    height: 85%;
-    width: 400;
-    resize: none;
-    display: block;
-    text-align: left;
-    margin-top: 16px;
-}
-#file-load {
-    display: block;
-}
-#tempo {
-    width: 50px;
-}
-#timeMarquis {
-    width: 250px;
-}
-#timeSig {
-    width: 50px;
+    height: 100%;
 }
 
 /*diagram-----------------------------------------------*/
-.diagram {
-    margin-left: 10px;
-    display: inline-block;
+#diagram {
+    padding-left: 10px;
+    padding-right: 10px;
+    display: block;
     overflow: hidden;
-    vertical-align: top;
+    position: fixed;
+    top: 0;
+    z-index: 10;    
+    background-color: black;
+}
+#main-content {
+    display: block;
 }
 .fret {
     stroke: gray;
@@ -141,32 +94,147 @@ textarea {
     stroke: none;
 }
 
-/*GUI editor-----------------------------------------------*/
-.GUI-wrapper {
+/*inputs-----------------------------------------------*/
+input, textarea {
+    -webkit-appearance: none;
+    cursor: pointer;
+    border: var(--input-border);
+    border-radius: var(--border-radius);
+    text-align: center;
+    padding: 5px;
+    margin: 5px;
+    font: inherit;
+    background-color: var(--input-bg-color);
+    color: var(--input-text-color);
+}
+input[type=checkbox] {
+    vertical-align: middle;
+    height: 32px;
+    width: 32px;
+}
+input[type=checkbox]:hover, input[type=button]:hover {
+    background-color: var(--input-hover-color);
+    cursor: pointer;
+}
+input[type=checkbox]:active input[type=button].active {
+    /*why doesn't this override the hover color?*/
+    background-color: var(--input-active-color) !important;
+}
+input[type=checkbox]:checked {
+    background-color: var(--input-active-color);
+}
+textarea, input[type=text], input[type=number] {
+    cursor: text;
+    background-color: var(--text-input-bg-color);
+    font: var(--mono-font);
+    color: var(--text-input-text-color);
+    padding: .25em;
+}
+/* for Firefox */
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+textarea {
+    height: 85%;
+    width: 30ch;
+    resize: none;
+    display: block;
+    text-align: left;
+    margin-top: 16px;
+    padding: .5em;
+    white-space: pre-line;
+}
+#file-load {
+    display: block;
+}
+
+
+/* song mode playback dashboard-------------------------- */
+#playback-dash, #song-metadata {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+@media (max-width:960px) {
+    #song-metadata { display: none; }
+}
+#title {
+    width: 40ch;
+}#tab
+#tempo, #time-sig, #count-in {
+    width: 6ch;
+}
+/* set for max counter width (4/4) */
+#writer, #transcriber, #counter {
+    width: 18ch;
+}
+
+/*song editor-----------------------------------------------*/
+#song-editor {
     color: var(--GUI-text-color);
     border: var(--input-border);
     padding: 10px;
     margin: 10px;
     border-radius: var(--border-radius);
     /*overflow-y: scroll;*/
-    height: 400px;
     display: inline-block;
     background-color: white;
     overflow: scroll;
 }
-#menu-wrapper {
-    width: 100;
+#song-editor {
+    display: flex;
+    flex-flow: row wrap;
+}
+/* chord menu, etc. */
+#chord-menu-wrapper {
+    width: 10ch;
+    text-align: center;
+    display: inline-flex;
+    flex-flow: column nowrap;
+    justify-content: flex-start;
 }
 #chord-menu {
     margin: 0;
     padding: 0;
+    flex-shrink: 1;
 }
-#tab-wrapper {
-    width: 800;
+
+/* section menu */
+#section-wrapper {
+    display: inline-block;
+    overflow: scroll;
 }
-#text-wrapper {
-    overflow: hidden;
+#section-menu {
+    width: 600px;
+    /* display: flex; */
+    /* flex-flow: row wrap; */
 }
+#section-order, #repeat-order {
+    width: 12ch;
+}
+.tab-content {
+    border: var(--tab-content-border);
+    background-color: var(--tab-content-bg-color);
+    border-radius: var(--border-radius);
+    display: none;
+    overflow: scroll;
+    margin: 10 0;
+}
+
+/* editor view switcher */
+#editor-expander {
+    display: inline-block;
+    height: 100%;
+    background-color: blue;
+}
+
+/* text editor */
 #text-wrapper > * {
     display: block;
 }
@@ -196,39 +264,13 @@ textarea {
     top: 0;
     left: 0;
 }
+
+
+/*GUI drag zones and child elements*/
 .drag-zone {
     margin: 8 20;
     padding: 8 0;
-}
-/*GUI song meta-data*/
-#section-order, #repeat-order {
-    width: 100;
-}
-/*GUI tabs*/
-.tab, tab > * {
-    display: inline-block;
-    vertical-align: middle;
-}
-.tab > input[type=button] {
-    /*background-color: inherit;*/
-    border: var(--tab-content-border);
-    cursor: pointer;
-    padding: 10px;
-    margin: 5px;
-    border-radius: var(--border-radius);
-    transition: 0.3s;
-    font: inherit;
-}
-.tab-content {
-    border: var(--tab-content-border);
-    background-color: var(--tab-content-bg-color);
-    border-radius: var(--border-radius);
-    display: none;
-    margin: 10 0;
-}
-/*GUI drag zones and child elements*/
-.drag-zone > * {
-    display: inline-block;
+    display: block;
 }
 .drag-zone > div:hover {
     background-color: var(--input-hover-color);
@@ -236,18 +278,8 @@ textarea {
 #chord-menu > * {
     display: block !important;
 }
-#trash {
-    width: 100;
-    height: 100;
-    margin: 0;
-    padding: 0;
-}
-#trash > * {
+sh > * {
     display: none;
-}
-#symbol-menu {
-    margin: 0;
-    padding: 0;
 }
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
@@ -286,23 +318,4 @@ textarea {
 }
 .current-chord-GUI {
     border-color: red;
-}
-
-
-
-table {
-    color: black;
-    position: absolute;
-    text-align: center;
-}
-td {
-    color: inherit;
-    padding: 0 20;
-}
-td > * {
-    display: inline;
-}
-#special {
-    padding: 0;
-    margin: 0;
 }
