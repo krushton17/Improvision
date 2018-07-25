@@ -24,13 +24,15 @@
 
 }
 
-body {
+html, body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
     white-space: nowrap;
     overflow-x: hidden;
-    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: stretch;
 }
 
 /*diagram-----------------------------------------------*/
@@ -39,13 +41,15 @@ body {
     padding-right: 10px;
     display: block;
     overflow: hidden;
-    position: fixed;
-    top: 0;
-    z-index: 10;    
     background-color: black;
+    flex: none;
 }
 #main-content {
-    display: block;
+    flex: 1 1 auto;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: stretch;
+    overflow: hidden;
 }
 .fret {
     stroke: gray;
@@ -87,6 +91,7 @@ body {
 .strings {
     stroke: lightgray;
 }
+/* need a better name */
 .text {
     fill: var(--main-text-color);
     font: var(--main-font);
@@ -95,6 +100,13 @@ body {
 }
 
 /*inputs-----------------------------------------------*/
+label {
+    text-align: center;
+    margin: 10 10 0 0;
+}
+fieldset {
+    -webkit-appearance: none;
+}
 input, textarea {
     -webkit-appearance: none;
     cursor: pointer;
@@ -106,6 +118,9 @@ input, textarea {
     font: inherit;
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 input[type=checkbox] {
     vertical-align: middle;
@@ -156,6 +171,7 @@ textarea {
 
 /* song mode playback dashboard-------------------------- */
 #playback-dash, #song-metadata {
+    flex: 0 0 content;
     display: flex;
     flex-flow: row wrap;
     justify-content: flex-start;
@@ -166,7 +182,7 @@ textarea {
 }
 #title {
     width: 40ch;
-}#tab
+}
 #tempo, #time-sig, #count-in {
     width: 6ch;
 }
@@ -177,46 +193,65 @@ textarea {
 
 /*song editor-----------------------------------------------*/
 #song-editor {
+    flex: 1 1 0;
     color: var(--GUI-text-color);
     border: var(--input-border);
     padding: 10px;
     margin: 10px;
     border-radius: var(--border-radius);
-    /*overflow-y: scroll;*/
-    display: inline-block;
     background-color: white;
     overflow: scroll;
-}
-#song-editor {
     display: flex;
-    flex-flow: row wrap;
+    flex-flow: row nowrap;
+    align-items: stretch;
+}
+#song-editor > * {
+    vertical-align: top;
+    display: inline-block;
+    height: 100%;
+    position: relative;
+}
+#GUI-wrapper > * {
+    vertical-align: top;
+    flex-basis: 1 1 auto;
 }
 /* chord menu, etc. */
 #chord-menu-wrapper {
+    /* ideal width for chord draggables */
     width: 10ch;
     text-align: center;
     display: inline-flex;
     flex-flow: column nowrap;
-    justify-content: flex-start;
+    overflow: hidden;
 }
 #chord-menu {
+    /* wider than its container to hide scrollbar */
+    width: 20ch;
     margin: 0;
     padding: 0;
-    flex-shrink: 1;
+    overflow-y: scroll;
+}
+#chord-menu > * {
+    /* override other drag-drop settings */
+    display: block !important;
+    width: 6ch !important;
 }
 
 /* section menu */
 #section-wrapper {
-    display: inline-block;
     overflow: scroll;
+    display: inline-block;
 }
 #section-menu {
-    width: 600px;
-    /* display: flex; */
-    /* flex-flow: row wrap; */
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
 }
 #section-order, #repeat-order {
     width: 12ch;
+}
+.tab {
+    display: inline-block !important;
 }
 .tab-content {
     border: var(--tab-content-border);
@@ -274,12 +309,6 @@ textarea {
 }
 .drag-zone > div:hover {
     background-color: var(--input-hover-color);
-}
-#chord-menu > * {
-    display: block !important;
-}
-sh > * {
-    display: none;
 }
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;

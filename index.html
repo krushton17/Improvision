@@ -24,7 +24,9 @@
     <!-- song mode -->
     <!-- playback dashboard -->
     <div id='playback-dash'>
-        <input type='button' id='play/pause' value='play' class='button'>    
+        <label>Play/Pause
+            <input type='button' id='play/pause' value='play' class='button'>    
+        </label>
         <label>Tempo:
             <input type='number' id='tempo' value='60'>
         </label>
@@ -42,7 +44,7 @@
         </label>
     </div>
     <!-- song metadata -->
-    <hr class='divider'>
+    <!-- <hr class='divider'>
     <div id='song-metadata'>
         <label>Song Title:
             <input type='text' id='title'>
@@ -53,7 +55,7 @@
         <label>Transcriber:
             <input type='text' id='transcriber'>
         </label>
-    </div>
+    </div> -->
     <!-- song editor GUI -->
     <div id='song-editor'>
         <!-- chord menu -->
@@ -73,7 +75,7 @@
                 <div id='section-menu'>
                     <fieldset id='tab-select'>
                         <legend>Sections:</legend>
-                        <input type='button' id='add-tab' value='+'>
+                        <input type='button' id='add-tab' value='+' class='tab'>
                     </fieldset>
                     <label>Section order:
                         <input type='text' id='section-order'>     

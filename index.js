@@ -416,9 +416,6 @@ let diagram = {
         //set diagram height to hide scrollbar on fretboard
         d3.select('#diagram')
             .style('height', this.height + this.topPadding + this.bottomPadding)
-        //!!store diagram height in variable for cleaner code
-        d3.select('#main-content')
-            .style('padding-top', this.height + this.topPadding + this.bottomPadding)
 
         //create head
         let head = d3.select('.head')
