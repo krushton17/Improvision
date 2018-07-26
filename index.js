@@ -907,6 +907,7 @@ let editorGUI = {
     setup: function() {
         //d3: instantiate GUI elements
 
+        let button = {};
         //create chord menu
         //!!works, but does not make the elements draggable
         let chordMenu = d3.select('#chord-menu')
@@ -919,13 +920,12 @@ let editorGUI = {
         for (let section of Object.keys(song.components).sort()) {
             
             //tab selector button
-            d3.select('#tab-select').append('input')
+                d3.select('#tab-select').append('input')
                 .attr('type', 'button')
                 .attr('class', 'tab')
+                .attr('id', 'section-selector-' + section)
                 .attr('value', section)
-                //this doesn't work
-                //add (right-click || touch-and-hold) event to edit
-                //.attr('contenteditable', 'true')
+                //!!add (right-click || touch-and-hold) event to edit
                 .attr('onclick', `tabChange(event, 'section-${section}')`);
             
             //tab content
@@ -978,6 +978,9 @@ let editorGUI = {
                 scroll: true,
             }));
         }
+        //!!lousy solution; instead, select these special drag zones
+        //  by ID and add them to the Sortable group separately,
+        //  as currently done with the Trash one.
         //the chord menu
         this.dragBoxes[0].option('group', {
             name: 'editor',
@@ -993,7 +996,7 @@ let editorGUI = {
                 return true;
             },
         });
-        //symbol menu
+        //spacer menu
         this.dragBoxes[1].option('group', {
             name: 'editor',
             pull: 'clone',
@@ -1008,7 +1011,8 @@ let editorGUI = {
                 evt.item.parentNode.removeChild(evt.item);
             }
         }))
-
+        //select the first section as if the button had been clicked
+        document.querySelector('#section-selector-' + Object.keys(song.components).sort()[0]).click();
     }//end of setup function
 }//end of editorGUI declaration
 
@@ -1028,6 +1032,28 @@ function tabChange(evt, tabID) {
 }
 
 editorGUI.setup();
+
+//show/hide GUI vs text editor
+//!!may not be any point in hiding either if the screen is big
+function editorToggle(GUIselect) {
+    let GUIwrap = document.querySelector('#GUI-wrapper');
+    let textWrap = document.querySelector('#text-wrapper');
+    let selected = GUIselect ? GUIwrap : textWrap;
+    let other = GUIselect ? textWrap : GUIwrap;
+    if (selected.className=='active-editor') {
+        selected.className='inactive-editor';
+        other.className='active-editor';
+    } else {
+        selected.className='active-editor';
+        if (window.innerWidth < 800) {
+            other.className='inactive-editor';
+        }
+    }
+}
+//anonymous functions needed to prevent this being read as an IIFE
+document.querySelector('#toggle-GUI').addEventListener('click', function(){editorToggle(true)});
+document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
+
 
 
 //DEPRECATED BUT USEFUL--------------------------------------------------------------------------------

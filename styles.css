@@ -220,10 +220,13 @@ input[type=number]::-webkit-outer-spin-button {
     /* doesn't seem to work */
     /* height: 100%; */
 }
-/* #GUI-wrapper > * {
-    vertical-align: top;
-    flex-basis: 1 1 auto;
-} */
+#GUI-wrapper {
+    flex: 1 1 0;
+
+    /* display: inline-flex; */
+    flex-flow: row nowrap;
+    /* flex-basis: 1 1 auto; */
+} 
 /* chord menu, etc. */
 #chord-menu-wrapper {
     /* ideal width for chord draggables, inc. margin/padding */
@@ -244,7 +247,7 @@ input[type=number]::-webkit-outer-spin-button {
     padding: 0; */
     overflow-y: scroll;
 
-    flex: 1 1 10ch;
+    flex: 1 1 0;
 }
 #chord-menu > * {
     /* override other drag-drop settings */
@@ -256,9 +259,9 @@ input[type=number]::-webkit-outer-spin-button {
 /* section menu */
 #section-wrapper {
     /* overflow: scroll; */
-    overflow: hidden;
+    /* overflow: hidden; */
 
-    flex: 1 1 0;
+    flex: 1 1 auto;
 
     display: inline-flex;
     flex-flow: column nowrap;
@@ -276,14 +279,17 @@ input[type=number]::-webkit-outer-spin-button {
 .tab {
     display: inline-block !important;
 }
+#tab-content-wrapper {
+    overflow: scroll;
+
+    flex: 1 1 0;
+}
 .tab-content {
     border: var(--tab-content-border);
     background-color: var(--tab-content-bg-color);
     border-radius: var(--border-radius);
-    overflow: scroll;
+    /* overflow: scroll; */
     /* margin: 10 0; */
-
-    flex: 1 1 0;
     
     display: none;
 }
@@ -294,10 +300,23 @@ input[type=number]::-webkit-outer-spin-button {
 
     flex: none;
 }
+#GUI-wrapper, #text-wrapper {
+    /* doesn't work, even if I use width instead of display */
+    /* transition: 2s */
+}
+.active-editor {
+    display: inline-flex;
+}
+.inactive-editor {
+    display: none;
+    /* max-width: 40px; */
+}
 
 /* text editor */
 #text-wrapper {
-    flex: none;
+    flex: none; 
+
+    flex-flow: column nowrap;
 }
 #text-wrapper > * {
     display: block;
