@@ -215,11 +215,6 @@ input[type=number]::-webkit-outer-spin-button {
     flex-flow: row nowrap;
     /* align-items: stretch; */
 }
-#song-editor > * {
-    /* vertical-align: top; */
-    /* doesn't seem to work */
-    /* height: 100%; */
-}
 #GUI-wrapper {
     flex: 1 1 0;
 
@@ -246,6 +241,7 @@ input[type=number]::-webkit-outer-spin-button {
     /* margin: 0;
     padding: 0; */
     overflow-y: scroll;
+    overflow-x: hidden;
 
     flex: 1 1 0;
 }
@@ -293,6 +289,12 @@ input[type=number]::-webkit-outer-spin-button {
     
     display: none;
 }
+#trash, #spacer-menu {
+    overflow: hidden;
+}
+#trash > * {
+    display: none;
+}
 
 /* editor view switcher */
 #editor-expander {
@@ -319,7 +321,7 @@ input[type=number]::-webkit-outer-spin-button {
     flex-flow: column nowrap;
 }
 #text-wrapper > * {
-    display: block;
+    /* display: block; */
 }
 #file-container {
     cursor: pointer;
@@ -349,6 +351,8 @@ textarea {
     resize: none;
     text-align: left;
     white-space: pre-line;
+
+    flex: 1 1 0;
 }
 
 
@@ -360,9 +364,10 @@ textarea {
 
     display: block;
 }
-.drag-zone > div:hover {
+/* doesn't seem to do anything?? */
+/* .drag-zone > div:hover {
     background-color: var(--input-hover-color);
-}
+} */
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
 }

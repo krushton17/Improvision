@@ -745,10 +745,6 @@ let timer = {
             nextIndex = i + beat;
             //!!add branching for repeat vs. single play
             nextIndex=(nextIndex+sequence.length)%sequence.length
-            //old-fashioned way: useful for branching?
-            //if (nextIndex > sequence.length) {
-            //    nextIndex -= sequence.length;
-            //}
             //once the chord is found, break out of the loop
             if (sequence[nextIndex]) {
                 return nextIndex;
@@ -888,39 +884,79 @@ function localFile(e) {
 document.getElementById('file-load').addEventListener('change', localFile, false);
 */
 
-//drag-drop GUI: NOT deprecated!!
-/*
-//turn div into sortable container
-let sortable = new Sortable(document.querySelector('#sortable'), {
-    group: 'editor',
-    sort: true,
-});
-let sortable2 = new Sortable(document.querySelector('#sortable2'), {
-    group: 'editor',
-    sort: false,
-});
-*/
-
-
 let editorGUI = {
     dragBoxes: [],
+    //do this on startup
     setup: function() {
+        //chord menu
+        this.dragBoxes.push(new Sortable(document.querySelector('#chord-menu'), {
+            group: {
+                name: 'editor',
+                pull: 'clone',
+                put: function(to, from, dragged) {
+                    //can't put spacers in the chord menu
+                    if (dragged.innerHTML == '') {return false;}
+                    //cycle through the chords listed in the chord menu
+                    for (let i = 0; i < to.el.children.length; i++) {
+                        if (to.el.children[i].innerHTML == dragged.innerHTML) {
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                revertClone: true
+            },
+            scroll: true,
+            sort:true,
+        }));
+        //spacer menu
+        this.dragBoxes.push(new Sortable(document.querySelector('#spacer-menu'), {
+            group: {
+                name: 'editor',
+                pull: 'clone',
+                put: false,
+                revertClone: true
+            },
+            scroll: false,
+        }));
+        //trash
+        this.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
+            group: {
+                name: 'editor',
+                pull: false,
+                put: true
+            },
+            onAdd: function(evt) {
+                evt.item.parentNode.removeChild(evt.item);
+            },
+            scroll: false,
+        }));
+        //options common to all of the above
+        for (let e of this.dragBoxes) {
+            e.option('animation', 500);
+            e.option('ghostClass', 'sort-ghost');
+            e.option('chosenClass', 'sort-select');
+            e.option('dragClass', 'sort-drag');
+        }
+    },//end of setup function
+
+    //do this after loading song data
+    GUIfromSong: function() {
         //d3: instantiate GUI elements
 
-        let button = {};
-        //create chord menu
-        //!!works, but does not make the elements draggable
+        //add chords in library to chord menu
         let chordMenu = d3.select('#chord-menu')
         for (let chord in song.chordLibrary) {
             chordMenu.append('span')
                 .attr('class', 'drag-chord')
                 .html(chord);
         }
+
         //add tabs and tab content for each section
         for (let section of Object.keys(song.components).sort()) {
             
             //tab selector button
-                d3.select('#tab-select').append('input')
+            d3.select('#tab-select').append('input')
                 .attr('type', 'button')
                 .attr('class', 'tab')
                 .attr('id', 'section-selector-' + section)
@@ -932,23 +968,24 @@ let editorGUI = {
             let sectionDiv = d3.select('#tab-content-wrapper').append('div')
                 .attr('id', 'section-' + section)
                 .attr('class', 'tab-content')
-            
+            //loop through lines in section
             for (let i = 0; i < song.components[section].length; i++) {
                 let line = song.components[section][i];
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
-                    .attr('class', 'drag-zone')
+                    .attr('class', 'GUI-line')
                     .attr('id', `section-${section}-line-${i}`)
-                
+                //loop through measures in line
                 for (let j = 0; j < line.length; j++) {
                     let measure = line[j];
-
+                    //check to see whether there are multiple components;
+                    //  true if multiple, false if only one
                     let components = (
                         measure.filter(String).length > 1 ||
                         (measure.filter(String).length == 1 &&
                             !measure[0])
                     );
-                    
+                    //create chords and spacers
                     for (let k = 0; k < measure.length; k++) {
                         let component = measure[k];
                         if (component) {
@@ -961,14 +998,15 @@ let editorGUI = {
                                 .attr('class', 'spacer-dot')
                         }
                     }
+                    //add a measure bar to the end of the line
                     lineBox.append('span')
                         .attr('class', 'spacer-bar');
-                }
-            }
-        }
-        //select the drag zones, make them draggable
-        for (let e of document.querySelectorAll('.drag-zone')) {
-            //!!editorGUI.drag....?
+                }//end of measure loop
+            }//end of line loop
+        }//end of section loop
+
+        //select the line divs, make their components draggable
+        for (let e of document.querySelectorAll('.GUI-line')) {
             this.dragBoxes.push(new Sortable(e, {
                 group: 'editor',
                 animation: 500,
@@ -978,45 +1016,12 @@ let editorGUI = {
                 scroll: true,
             }));
         }
-        //!!lousy solution; instead, select these special drag zones
-        //  by ID and add them to the Sortable group separately,
-        //  as currently done with the Trash one.
-        //the chord menu
-        this.dragBoxes[0].option('group', {
-            name: 'editor',
-            pull: 'clone',
-            put: function(to, from, dragged) {
-                if (dragged.innerHTML == '') {return false;}
-                //cycle through the chords listed in the chord menu
-                for (let i = 0; i < to.el.children.length; i++) {
-                    if (to.el.children[i].innerHTML == dragged.innerHTML) {
-                        return false;
-                    }
-                }
-                return true;
-            },
-        });
-        //spacer menu
-        this.dragBoxes[1].option('group', {
-            name: 'editor',
-            pull: 'clone',
-            put: false,
-            revertClone: true
-        })
-        this.dragBoxes[0].option('sort', true);
-        this.dragBoxes[0].option('revertClone', true);
-        this.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
-            group: 'editor',
-            onAdd: function(evt) {
-                evt.item.parentNode.removeChild(evt.item);
-            }
-        }))
         //select the first section as if the button had been clicked
         document.querySelector('#section-selector-' + Object.keys(song.components).sort()[0]).click();
-    }//end of setup function
+    }//end of GUIfromSong function
 }//end of editorGUI declaration
 
-
+//make the buttons bring up the tab content for each section
 function tabChange(evt, tabID) {
     let tabcontent, tablinks;
     tabcontent = document.getElementsByClassName("tab-content");
@@ -1031,7 +1036,10 @@ function tabChange(evt, tabID) {
     evt.currentTarget.className += " active";
 }
 
+//initialize drag-drop interface
 editorGUI.setup();
+//!!placeholder until this becomes part of song loading procedure
+editorGUI.GUIfromSong();
 
 //show/hide GUI vs text editor
 //!!may not be any point in hiding either if the screen is big
@@ -1054,9 +1062,7 @@ function editorToggle(GUIselect) {
 document.querySelector('#toggle-GUI').addEventListener('click', function(){editorToggle(true)});
 document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
 
-
-
-//DEPRECATED BUT USEFUL--------------------------------------------------------------------------------
+//DEPRECATED BUT USEFUL FOR REFERENCE-----------------------------------------------------------------
 /*
 let button = document.getElementById('button');
 button.addEventListener('click', update);
