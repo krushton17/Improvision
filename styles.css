@@ -28,39 +28,44 @@ html, body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
-    white-space: nowrap;
-    overflow-x: hidden;
+    /* white-space: nowrap; */
+    /* overflow-x: hidden; */
+    
     display: flex;
     flex-flow: column nowrap;
-    align-items: stretch;
+    /* align-items: stretch; */
 }
 
 /*diagram-----------------------------------------------*/
 #diagram {
-    padding-left: 10px;
-    padding-right: 10px;
-    display: block;
+    /* padding-left: 10px; */
+    /* padding-right: 10px; */
     overflow: hidden;
     background-color: black;
+    
     flex: none;
-}
-#main-content {
-    flex: 1 1 auto;
+    
     display: flex;
-    flex-flow: column nowrap;
-    align-items: stretch;
-    overflow: hidden;
+    flex-flow: row nowrap;
+}
+#head-container {
+    flex: none;
+
+    display: inline-block;
+    /* vertical-align: top; */
+}
+#fret-container {
+    cursor: move;
+    overflow-x: scroll;
+    overflow-y: hidden;
+
+    flex: 1 1 0;
+
+    display: inline-block;
 }
 .fret {
     stroke: gray;
     stroke-width: 4px;
-}
-.fretContainer {
-    display: inline-block;
-}
-.headContainer {
-    display: inline-block;
-    vertical-align: top;
 }
 .marker {
     fill: var(--text-input-bg-color);
@@ -68,10 +73,10 @@ html, body {
 .marker12 {
     fill: rgb(66, 54, 54);
 }
-.note {
+.note-circle {
     fill: var(--text-input-bg-color);
     stroke-width: 2px;
-    r: 16; /*do I want to define this here, or programmatically for animations?*/
+    /*r: 16; /*do I want to define this here, or programmatically for animations?*/
 }
 .head {
     stroke: gray;
@@ -91,18 +96,29 @@ html, body {
 .strings {
     stroke: lightgray;
 }
-/* need a better name */
-.text {
+.note-text {
     fill: var(--main-text-color);
     font: var(--main-font);
     text-anchor: middle;
     stroke: none;
 }
 
+/* everything but the diagram */
+#main-content {
+    /* overflow: hidden; */
+
+    flex: 1 1 0;
+
+    display: flex;
+    flex-flow: column nowrap;
+    /* align-items: stretch; */
+}
+
+
 /*inputs-----------------------------------------------*/
 label {
     text-align: center;
-    margin: 10 10 0 0;
+    /* margin: 10 10 0 0; */
 }
 fieldset {
     -webkit-appearance: none;
@@ -113,12 +129,13 @@ input, textarea {
     border: var(--input-border);
     border-radius: var(--border-radius);
     text-align: center;
-    padding: 5px;
-    margin: 5px;
+    /* padding: 5px;
+    margin: 5px; */
     font: inherit;
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
     display: block;
+    /* centers it */
     margin-left: auto;
     margin-right: auto;
 }
@@ -143,7 +160,7 @@ textarea, input[type=text], input[type=number] {
     background-color: var(--text-input-bg-color);
     font: var(--mono-font);
     color: var(--text-input-text-color);
-    padding: .25em;
+    /* padding: .25em; */
 }
 /* for Firefox */
 input[type='number'] {
@@ -152,17 +169,7 @@ input[type='number'] {
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
-    margin: 0;
-}
-textarea {
-    height: 85%;
-    width: 30ch;
-    resize: none;
-    display: block;
-    text-align: left;
-    margin-top: 16px;
-    padding: .5em;
-    white-space: pre-line;
+    /* margin: 0; */
 }
 #file-load {
     display: block;
@@ -172,10 +179,11 @@ textarea {
 /* song mode playback dashboard-------------------------- */
 #playback-dash, #song-metadata {
     flex: 0 0 content;
+
     display: flex;
     flex-flow: row wrap;
-    justify-content: flex-start;
-    align-items: center;
+    /* justify-content: flex-start; */
+    align-items: flex-start;
 }
 @media (max-width:960px) {
     #song-metadata { display: none; }
@@ -193,59 +201,74 @@ textarea {
 
 /*song editor-----------------------------------------------*/
 #song-editor {
-    flex: 1 1 0;
     color: var(--GUI-text-color);
-    border: var(--input-border);
-    padding: 10px;
-    margin: 10px;
+    /* border: var(--input-border); */
+    /* padding: 10px;
+    margin: 10px;  */
     border-radius: var(--border-radius);
     background-color: white;
-    overflow: scroll;
+    overflow: hidden;
+
+    flex: 1 1 0;
+
     display: flex;
     flex-flow: row nowrap;
-    align-items: stretch;
+    /* align-items: stretch; */
 }
 #song-editor > * {
-    vertical-align: top;
-    display: inline-block;
-    height: 100%;
-    position: relative;
+    /* vertical-align: top; */
+    /* doesn't seem to work */
+    /* height: 100%; */
 }
-#GUI-wrapper > * {
+/* #GUI-wrapper > * {
     vertical-align: top;
     flex-basis: 1 1 auto;
-}
+} */
 /* chord menu, etc. */
 #chord-menu-wrapper {
-    /* ideal width for chord draggables */
+    /* ideal width for chord draggables, inc. margin/padding */
     width: 10ch;
     text-align: center;
+    overflow: hidden;
+
+    flex: none;
+
     display: inline-flex;
     flex-flow: column nowrap;
-    overflow: hidden;
+    /* justify-content: flex-start; */
 }
 #chord-menu {
     /* wider than its container to hide scrollbar */
     width: 20ch;
-    margin: 0;
-    padding: 0;
+    /* margin: 0;
+    padding: 0; */
     overflow-y: scroll;
+
+    flex: 1 1 10ch;
 }
 #chord-menu > * {
     /* override other drag-drop settings */
     display: block !important;
+    /* ideal width for chord draggables */
     width: 6ch !important;
 }
 
 /* section menu */
 #section-wrapper {
-    overflow: scroll;
-    display: inline-block;
+    /* overflow: scroll; */
+    overflow: hidden;
+
+    flex: 1 1 0;
+
+    display: inline-flex;
+    flex-flow: column nowrap;
 }
 #section-menu {
+    flex: none;
+
     display: flex;
-    flex-flow: row nowrap;
-    align-items: stretch;
+    flex-flow: row wrap;
+    /* align-items: stretch; */
 }
 #section-order, #repeat-order {
     width: 12ch;
@@ -257,19 +280,25 @@ textarea {
     border: var(--tab-content-border);
     background-color: var(--tab-content-bg-color);
     border-radius: var(--border-radius);
-    display: none;
     overflow: scroll;
-    margin: 10 0;
+    /* margin: 10 0; */
+
+    flex: 1 1 0;
+    
+    display: none;
 }
 
 /* editor view switcher */
 #editor-expander {
-    display: inline-block;
-    height: 100%;
     background-color: blue;
+
+    flex: none;
 }
 
 /* text editor */
+#text-wrapper {
+    flex: none;
+}
 #text-wrapper > * {
     display: block;
 }
@@ -279,8 +308,6 @@ textarea {
     border: var(--input-border);
     border-radius: var(--border-radius);
     text-align: center;
-    padding: 5px;
-    margin: 5px;
     width: 150px;
     font: inherit;
     background-color: var(--input-bg-color);
@@ -291,7 +318,6 @@ textarea {
 }
 #file-container [type=file] {
     cursor: inherit;
-    display: block;
     min-height: 100%;
     min-width: 100%;
     opacity: 0;
@@ -299,12 +325,20 @@ textarea {
     top: 0;
     left: 0;
 }
+textarea {
+    width: 30ch;
+    resize: none;
+    text-align: left;
+    white-space: pre-line;
+}
+
 
 
 /*GUI drag zones and child elements*/
 .drag-zone {
     margin: 8 20;
     padding: 8 0;
+
     display: block;
 }
 .drag-zone > div:hover {
@@ -318,14 +352,14 @@ textarea {
     font: var(--main-text-color);
     color: black;
     border: 1.5px solid black;
-    padding: 10px;
+    /* padding: 10px; */
     border-radius: var(--border-radius);
-    margin: 5px;
+    /* margin: 5px; */
     text-align: center;
 }
 .spacer-bar, .spacer-dot {
     background-color: black;
-    margin: 5px;
+    /* margin: 5px; */
     border-radius: var(--border-radius);
     display: inline-block;
     vertical-align: middle;

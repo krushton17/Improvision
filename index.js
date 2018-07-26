@@ -159,7 +159,7 @@ class Chord {
             //convert string root letter to number
             let openNote = encodeNote(i.toUpperCase());
             //loop through frets
-            for (let fret = 0; fret <= instrument.fretNumber-1; fret++) {
+            for (let fret = 1; fret <= instrument.fretNumber-1; fret++) {
                 //at each fret, loop through the chord tones to see if they match
                 for (let interval of this.notes) {
                     //note = absolute number value of the note played by that fret
@@ -241,9 +241,6 @@ let normalize = function(chord, root) {
     return chord.map(note => {
         note += encodeNote(root);
         note %= 12;
-        //if (note > 11) {
-        //    note -= 12;
-        //}
     });
 }
 
@@ -384,18 +381,23 @@ let instrument = {
 
 //add a function to change the diagram if you change instruments
 let diagram = {
-    //reference numbers for overall diagram
-    topPadding: 40,
-    bottomPadding: 60,
-    sidePadding: 30,
-    //reference numbers for x axis
-    fretWidth: 100,
+    //reference numbers for diagram proportions
+    //x-coord of the nut
     nutPos: 50,
-    fretExt: 0, //how far the frets extend beyond the outermost strings
-    get fretBoardWidth() {return this.fretWidth*instrument.fretNumber},
-    //reference numbers for y axis
+    //space between strings
     stringSpacing: 40,
-    get height() {return this.stringSpacing*(instrument.strings.length-1)},
+    //circle size as a ratio of string spacing
+    circleScaleFactor: .85,
+    //apply scaling factor
+    get radius() {
+        return this.stringSpacing/2*this.circleScaleFactor;
+    },
+    //width of one fret
+    fretWidth: 100,
+    //width of the entire fretboard
+    get fretBoardWidth() {return this.fretWidth*instrument.fretNumber},
+    //distance between top and bottom strings
+    get fretBoardHeight() {return this.stringSpacing*(instrument.strings.length-1)},
     //create scaling function for x axis
     get xScale() {
         return d3.scaleLinear()
@@ -406,21 +408,32 @@ let diagram = {
     get yScale() {
         return d3.scaleLinear()
             .domain([0, instrument.strings.length -1])
-            .range([this.topPadding + this.height, this.topPadding])
+            .range([this.stringSpacing/2 + this.fretBoardHeight, this.stringSpacing/2])
     },
+
     //set up the blank diagram
     setup: function() {
-        //avoid a 'this' conflict when calling these later
+        //!!add something to clear the diagram if changing instruments or resizing it
+        //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
         let yScale = this.yScale;
+
         //set diagram height to hide scrollbar on fretboard
         d3.select('#diagram')
-            .style('height', this.height + this.topPadding + this.bottomPadding)
+            //1.5 extra string spacing provides just enough room for the notes and the fret numbers
+            .style('height', this.fretBoardHeight + this.stringSpacing*1.5)
 
         //create head
-        let head = d3.select('.head')
+        let head = d3.select('#head')
             .attr('width', this.nutPos)
-            .attr('height', this.height + this.topPadding + this.bottomPadding)
+            .attr('height', this.fretBoardHeight + this.stringSpacing)
+        //add line for nut
+        head.append('line')
+                .attr('class', 'fret')
+                .attr('x1', this.nutPos-1.5)
+                .attr('x2', this.nutPos-1.5)
+                .attr('y1', yScale(0))
+                .attr('y2', yScale(instrument.strings.length-1))
         //create groups for each string label
         let stringLabels = head.selectAll('g')
                 .data(instrument.strings)
@@ -432,36 +445,27 @@ let diagram = {
                 .attr('class', 'strings')
                 .attr('x1', 0)
                 .attr('x2', this.nutPos);
-        //add line for nut
-        head.append('line')
-                .attr('class', 'fret')
-                .attr('x1', this.nutPos-1.5)
-                .attr('x2', this.nutPos-1.5)
-                .attr('y1', yScale(0)+this.fretExt)
-                .attr('y2', yScale(instrument.strings.length-1)-this.fretExt)
         //add note circles
         stringLabels.append('circle')
-                .attr('class', 'note head')
-                //.attr('r', 16)
+                .attr('class', 'note-circle head')
+                .attr('r', this.radius)
                 .attr('cx', 0);
         //add note names
         stringLabels.append('text')
-                .attr('class', 'text')
+                .attr('class', 'note-text')
                 .attr('y', 5)
                 .text(function(d) {return d;})
     
         //create fretboard
-        d3.select('.fretContainer')
-            //extra height allows for hidden scrollbar
-            .style('height', this.height + this.topPadding + this.bottomPadding*2)
-            .style('width', document.documentElement.clientWidth - this.nutPos)
-            .style('overflow-x', 'scroll')
-            .style('overflow-y', 'hidden')
+        //set fret-container height; extra height hides scrollbar
+        d3.select('#fret-container')
+            .style('height', this.fretBoardHeight + this.stringSpacing*3)
         //store selection in variable
-        let fretBoard = d3.select('.fretboard');
+        let fretBoard = d3.select('#fretboard');
         //set fretBoard dimensions
         fretBoard.attr('width', this.fretBoardWidth)
-            .attr('height', this.height + this.topPadding + this.bottomPadding)
+            //the extra height here is for the fret number labels
+            .attr('height', this.fretBoardHeight + this.stringSpacing*2)
             .attr('left', this.nutPos);
         //add color markers for key frets
         fretBoard
@@ -470,12 +474,13 @@ let diagram = {
                 .selectAll('.marker')
                 .data([3, 5, 7, 9, 12, 15, 17, 19, 21])
             .enter().append('rect')
+                //marker #12 is styled differently
                 .attr('class', function(d) {
                     return d == 12 ? 'marker12' : 'marker';
                 })
                 .attr('x', function(d) { return xScale(d-1);})
                 .attr('width', this.fretWidth + 3)
-                .attr('y', this.topPadding)
+                .attr('y', this.stringSpacing/2)
                 .attr('height', this.stringSpacing*(instrument.strings.length-1));
         //add lines for frets
         fretBoard
@@ -487,17 +492,17 @@ let diagram = {
                 .attr('class', 'fret')
                 .attr('x1', function(d) { return xScale(d); })
                 .attr('x2', function(d) { return xScale(d); })
-                .attr('y1', yScale(0)+this.fretExt)
-                .attr('y2', yScale(instrument.strings.length-1)-this.fretExt);
+                .attr('y1', yScale(0))
+                .attr('y2', yScale(instrument.strings.length-1));
         //add fret labels at bottom
         fretBoard
             .append('g')
-                .attr('id', 'fretLabels')
+                .attr('id', 'fret-labels')
                 .selectAll('text')
                 .data(d3.range(1, instrument.fretNumber))
             .enter().append('text')
                 //!change this to class: fret labels
-                .attr('class', 'text')
+                .attr('class', 'note-text')
                 .attr('x', function(d) { return xScale(d-.5); })
                 .attr('y', yScale(-1))
                 .text(function(d) {return d;});
@@ -508,7 +513,7 @@ let diagram = {
                 .selectAll('g')
                 .data(instrument.strings)
             .enter().append('g')
-                .attr('class', 'stringContainer')
+                .attr('class', 'string-container')
                 .attr("transform", function(d, i) { return `translate(0,${yScale(i)})`})
             .append('line')
                 .attr('class', 'strings')
@@ -516,23 +521,21 @@ let diagram = {
                 .attr('x2', this.fretBoardWidth);
         fretBoard
             .append('g')
-                .attr('id', 'noteContainer')
-        //resize fretboard whenever the window is resized
-        window.addEventListener('resize', this.resize.bind(this));
-        //set the initial size
-        this.resize();
+                .attr('id', 'note-container')
     },//end of diagram setup function
 
     //chordData: chord, fadeIn, duration
     update: function(chord, fadeIn, duration) {
+        //put this in a format d3 can use
         let chordData = {
             chord: chord,
             fadeIn: fadeIn,
             duration: duration
         }
-        //avoid a 'this' conflict when calling these later
+        //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
         let yScale = this.yScale;
+        let radius = this.radius;
         //give each note a unique identifier;
         //  every note is always in the enter() selection
         let keyFunc = function(d) {
@@ -541,13 +544,13 @@ let diagram = {
         }
 
         //create <g> to hold all circles, text for a given set of notes
-        let noteSet = d3.select('#noteContainer').selectAll('g')
+        let noteSet = d3.select('#note-container').selectAll('g')
             .data([chordData], keyFunc)
             .enter().append('g')
 
         //set the fade-in and duration of the new noteSet
         noteSet
-            .attr('class', 'noteSet')
+            .attr('class', 'note-set')
             .style('opacity', 0)
             //1st transition: fade-in
             .transition()
@@ -592,7 +595,7 @@ let diagram = {
                 notes.append('circle')
                     .attr('class', function(d) {
                         //use css to style the different scale degrees
-                        let noteClass = 'note';
+                        let noteClass = 'note-circle';
                         if (d.interval == 'uni') {
                             noteClass += ' root'; 
                         } else if (chord.guides.includes(d.interval)) {
@@ -604,9 +607,10 @@ let diagram = {
                         }
                         return noteClass;
                     })
+                    .attr('r', radius)
                 //append text
                 notes.append('text')
-                        .attr('class', 'text')
+                        .attr('class', 'note-text')
                         .attr('y', 5)
                        //convert to most readable language
                         .text(function(d) {
@@ -629,16 +633,6 @@ let diagram = {
                         })
             })//end of 'each' block
     },//end of update function
-
-    //keep the diagram smaller than the window
-    resize: function() {
-        //delay period minimizes resizing artifacts
-        clearInterval(this.resizeTimer);
-        this.resizeTimer = setTimeout(() => {
-                //!magic number 10 == left padding of diagram tag
-            d3.select('.fretContainer').style('width', document.documentElement.clientWidth - this.nutPos - this.sidePadding)
-        }, 100);
-    }//end of resize function
 }//end of diagram class definition
 
 //initialize diagram
@@ -676,7 +670,7 @@ let timer = {
         this.prevComponent = {};
         this.nextGUIel = undefined;
         //remove any existing note sets
-        d3.selectAll('.noteSet').remove();
+        d3.selectAll('.note-set').remove();
     },//end of reset function
 
     //increment the counter and update the diagram
@@ -816,7 +810,7 @@ let timer = {
             clearInterval(this.beat);
             //this does
             //select all noteSets
-            d3.selectAll('.noteSet')
+            d3.selectAll('.note-set')
                 //cancel current and pending animations
                 .interrupt()
                 //make semitransparent notes disappear
