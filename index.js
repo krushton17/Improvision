@@ -665,6 +665,7 @@ let timer = {
         this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
         this.counter = this.countIn;
         this.sectionIndex = 0;
+        this.lineIndex = 0;
         this.componentIndex = 0;
         this.currentComponent = {};
         this.prevComponent = {};
@@ -683,10 +684,12 @@ let timer = {
             return ++this.counter;
         }
 
-        //get the beat number from the counter
-        let beat = this.counter/this.countsPerBeat;
         //!add a way to choose which sequence to use
         let sequence = song.singleSeq;
+
+        //get the beat number from the counter
+        let beat = this.counter/this.countsPerBeat;
+
         //if there isn't a chord change on the current beat
         //  the second expression here solves the problem of
         //  skipping the first chord
@@ -723,6 +726,12 @@ let timer = {
         //increment counter
         this.counter++;
 
+        let clear = document.querySelectorAll('.current-chord-GUI');
+        console.log(clear.classList);
+        for (let obj of clear) {
+            obj.classList.remove('current-chord-GUI');
+        }
+        this.matchGUItoChord(beat);
         /*
         //highlight the current chord in the GUI
         if (typeof this.nextGUIel != 'undefined') {
@@ -750,6 +759,44 @@ let timer = {
                 return nextIndex;
             }
         }
+    },
+
+    matchGUItoChord(beat) {
+        //let componentIndex = 0;
+        //let lineIndex = 0;
+        //let sectionIndex = 0;
+        if (beat < 0) {return;}
+        //for (let i = 0; i < beat; i++) {
+            console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
+            if (this.componentIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
+                    .childNodes[this.lineIndex]
+                    .querySelectorAll('.drag-chord').length) {
+                this.componentIndex = 0;
+                this.lineIndex++;
+                if (this.lineIndex >= song.components[song.singleStruct[this.sectionIndex]].length) {
+                    this.lineIndex = 0;
+                    this.sectionIndex++;
+                    //add branching for repeat/single play modes
+                    if (this.sectionIndex >= song.singleStruct.length) {
+                        this.sectionIndex = 0;
+                    }
+                }
+            }
+        //}
+        //not sure I need this
+        //this.prevComponent = this.currentComponent;
+        //!!make a separate function for looping through the GUI elements
+        //  to be reused to convert GUI to text
+        this.currentComponent =
+            document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
+                .childNodes[this.lineIndex]
+                .querySelectorAll('.drag-chord')[this.componentIndex];
+        
+        this.currentComponent.classList.add('current-chord-GUI');
+        console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
+            .querySelectorAll('.drag-chord')[this.componentIndex]);
+
+        this.componentIndex++;
     },
     
     //display the count in a textbox; play sound on downbeats
