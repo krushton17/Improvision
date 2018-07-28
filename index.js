@@ -974,7 +974,6 @@ let editorGUI = {
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
                     .attr('class', 'GUI-line')
-                    .attr('id', `section-${section}-line-${i}`)
                 //loop through measures in line
                 for (let j = 0; j < line.length; j++) {
                     let measure = line[j];
@@ -992,7 +991,6 @@ let editorGUI = {
                             lineBox.append('span')
                                 .attr('class', 'drag-chord')
                                 .html(component)
-                                .attr('id', `chord-${i}`);
                         } else if (components) {
                             lineBox.append('span')
                                 .attr('class', 'spacer-dot')
@@ -1058,9 +1056,52 @@ function editorToggle(GUIselect) {
         }
     }
 }
-//anonymous functions needed to prevent this being read as an IIFE
+//anonymous functions needed to prevent these being read as IIFEs
 document.querySelector('#toggle-GUI').addEventListener('click', function(){editorToggle(true)});
 document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
+
+
+//convert GUI elements to text
+function GUItoText() {
+    //!!add validation
+    let text = '';
+    //!!add header info
+
+    //loop through the GUI elements
+    let sections = document.querySelectorAll('.tab-content');
+    for (let section of sections) {
+        //start each section with a line break,
+        //  the name of the section, and an opening bracket
+        //magic number 8 = the length of 'section-',
+        //  the irrelevant part of the id name
+        text += '\n' + section.id.slice(8) + '[';
+        let lines = section.childNodes;
+        for (i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            //no line break for the first line
+            if (i != 0) { text += '\n'; }
+            let components = line.childNodes;
+            for (let component of components) {
+                //get the component info from the class name
+                let className = component.className;
+                text+= (function() {
+                    switch (className) {
+                        case 'drag-chord':
+                            //this contains the name of the chord
+                            return component.innerHTML;
+                        case 'spacer-dot':
+                            return '.';
+                        case 'spacer-bar':
+                            return '|';
+                    }//end of switch block
+                })();
+            }//end of component loop
+        }//end of line loop
+        text += ']';
+    }//end of section loop
+    console.log(text);
+}//end of GUItoText function
+
 
 //DEPRECATED BUT USEFUL FOR REFERENCE-----------------------------------------------------------------
 /*

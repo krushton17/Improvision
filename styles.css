@@ -251,6 +251,12 @@ input[type=number]::-webkit-outer-spin-button {
     /* ideal width for chord draggables */
     width: 6ch !important;
 }
+#trash, #spacer-menu {
+    overflow: hidden;
+}
+#trash > * {
+    display: none;
+}
 
 /* section menu */
 #section-wrapper {
@@ -287,12 +293,6 @@ input[type=number]::-webkit-outer-spin-button {
     /* overflow: scroll; */
     /* margin: 10 0; */
     
-    display: none;
-}
-#trash, #spacer-menu {
-    overflow: hidden;
-}
-#trash > * {
     display: none;
 }
 
@@ -358,14 +358,14 @@ textarea {
 
 
 /*GUI drag zones and child elements*/
-.drag-zone {
+.GUI-line {
     margin: 8 20;
     padding: 8 0;
 
     display: block;
 }
 /* doesn't seem to do anything?? */
-/* .drag-zone > div:hover {
+/* .GUI-line > div:hover {
     background-color: var(--input-hover-color);
 } */
 .drag-chord, .spacer-bar, .spacer-dot {
