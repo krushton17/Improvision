@@ -417,6 +417,7 @@ let diagram = {
         //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
         let yScale = this.yScale;
+        let radius = this.radius;
 
         //set diagram height to hide scrollbar on fretboard
         d3.select('#diagram')
@@ -438,8 +439,8 @@ let diagram = {
         let stringLabels = head.selectAll('g')
                 .data(instrument.strings)
             .enter().append('g')
-                //!magic number 18 == radius + stroke
-                .attr("transform", function(d, i) { return `translate(18,${yScale(i)})`});
+                //!magic number 2 == stroke
+                .attr("transform", function(d, i) { return `translate(${radius + 2},${yScale(i)})`});
         //add string lines underneath note circles
         stringLabels.append('line')
                 .attr('class', 'strings')
@@ -448,7 +449,7 @@ let diagram = {
         //add note circles
         stringLabels.append('circle')
                 .attr('class', 'note-circle head')
-                .attr('r', this.radius)
+                .attr('r', radius)
                 .attr('cx', 0);
         //add note names
         stringLabels.append('text')

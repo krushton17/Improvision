@@ -28,18 +28,15 @@ html, body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
-    /* white-space: nowrap; */
-    /* overflow-x: hidden; */
     
     display: flex;
     flex-flow: column nowrap;
-    /* align-items: stretch; */
 }
 
 /*diagram-----------------------------------------------*/
 #diagram {
-    /* padding-left: 10px; */
-    /* padding-right: 10px; */
+    margin: 10px;
+    padding-bottom: 10px;
     overflow: hidden;
     background-color: black;
     
@@ -52,7 +49,6 @@ html, body {
     flex: none;
 
     display: inline-block;
-    /* vertical-align: top; */
 }
 #fret-container {
     cursor: move;
@@ -76,7 +72,6 @@ html, body {
 .note-circle {
     fill: var(--text-input-bg-color);
     stroke-width: 2px;
-    /*r: 16; /*do I want to define this here, or programmatically for animations?*/
 }
 .head {
     stroke: gray;
@@ -105,20 +100,16 @@ html, body {
 
 /* everything but the diagram */
 #main-content {
-    /* overflow: hidden; */
-
     flex: 1 1 0;
 
     display: flex;
     flex-flow: column nowrap;
-    /* align-items: stretch; */
 }
-
 
 /*inputs-----------------------------------------------*/
 label {
     text-align: center;
-    /* margin: 10 10 0 0; */
+    margin: 10 10;
 }
 fieldset {
     -webkit-appearance: none;
@@ -129,8 +120,8 @@ input, textarea {
     border: var(--input-border);
     border-radius: var(--border-radius);
     text-align: center;
-    /* padding: 5px;
-    margin: 5px; */
+    padding: .15em .25em .25em .25em;
+    margin: .5em;
     font: inherit;
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
@@ -140,27 +131,21 @@ input, textarea {
     margin-right: auto;
 }
 input[type=checkbox] {
-    vertical-align: middle;
-    height: 32px;
-    width: 32px;
+    height: 1.5em;
+    width: 1.5em;
 }
 input[type=checkbox]:hover, input[type=button]:hover {
     background-color: var(--input-hover-color);
     cursor: pointer;
 }
-input[type=checkbox]:active input[type=button].active {
-    /*why doesn't this override the hover color?*/
+input[type=button].active, input[type=checkbox]:checked {
     background-color: var(--input-active-color) !important;
-}
-input[type=checkbox]:checked {
-    background-color: var(--input-active-color);
 }
 textarea, input[type=text], input[type=number] {
     cursor: text;
     background-color: var(--text-input-bg-color);
     font: var(--mono-font);
     color: var(--text-input-text-color);
-    /* padding: .25em; */
 }
 /* for Firefox */
 input[type='number'] {
@@ -169,7 +154,6 @@ input[type='number'] {
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
-    /* margin: 0; */
 }
 #file-load {
     display: block;
@@ -182,8 +166,6 @@ input[type=number]::-webkit-outer-spin-button {
 
     display: flex;
     flex-flow: row wrap;
-    /* justify-content: flex-start; */
-    align-items: flex-start;
 }
 @media (max-width:960px) {
     #song-metadata { display: none; }
@@ -194,7 +176,7 @@ input[type=number]::-webkit-outer-spin-button {
 #tempo, #time-sig, #count-in {
     width: 6ch;
 }
-/* set for max counter width (4/4) */
+/* set for max counter width (4/4:16chars) */
 #writer, #transcriber, #counter {
     width: 18ch;
 }
@@ -202,9 +184,9 @@ input[type=number]::-webkit-outer-spin-button {
 /*song editor-----------------------------------------------*/
 #song-editor {
     color: var(--GUI-text-color);
-    /* border: var(--input-border); */
-    /* padding: 10px;
-    margin: 10px;  */
+    border: var(--input-border);
+    padding: 10px;
+    margin: 10px; 
     border-radius: var(--border-radius);
     background-color: white;
     overflow: hidden;
@@ -213,14 +195,11 @@ input[type=number]::-webkit-outer-spin-button {
 
     display: flex;
     flex-flow: row nowrap;
-    /* align-items: stretch; */
 }
 #GUI-wrapper {
     flex: 1 1 0;
 
-    /* display: inline-flex; */
     flex-flow: row nowrap;
-    /* flex-basis: 1 1 auto; */
 } 
 /* chord menu, etc. */
 #chord-menu-wrapper {
@@ -233,13 +212,10 @@ input[type=number]::-webkit-outer-spin-button {
 
     display: inline-flex;
     flex-flow: column nowrap;
-    /* justify-content: flex-start; */
 }
 #chord-menu {
     /* wider than its container to hide scrollbar */
     width: 20ch;
-    /* margin: 0;
-    padding: 0; */
     overflow-y: scroll;
     overflow-x: hidden;
 
@@ -253,6 +229,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 #trash, #spacer-menu {
     overflow: hidden;
+
+    flex: 0 0 content;
 }
 #trash > * {
     display: none;
@@ -260,9 +238,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* section menu */
 #section-wrapper {
-    /* overflow: scroll; */
-    /* overflow: hidden; */
-
     flex: 1 1 auto;
 
     display: inline-flex;
@@ -273,7 +248,10 @@ input[type=number]::-webkit-outer-spin-button {
 
     display: flex;
     flex-flow: row wrap;
-    /* align-items: stretch; */
+}
+#tab-select > * {
+    margin-left: .25em;
+    margin-right: .25em;
 }
 #section-order, #repeat-order {
     width: 12ch;
@@ -291,7 +269,7 @@ input[type=number]::-webkit-outer-spin-button {
     background-color: var(--tab-content-bg-color);
     border-radius: var(--border-radius);
     /* overflow: scroll; */
-    /* margin: 10 0; */
+    margin: 10 0;
     
     display: none;
 }
@@ -319,9 +297,6 @@ input[type=number]::-webkit-outer-spin-button {
     flex: none; 
 
     flex-flow: column nowrap;
-}
-#text-wrapper > * {
-    /* display: block; */
 }
 #file-container {
     cursor: pointer;
@@ -355,46 +330,45 @@ textarea {
     flex: 1 1 0;
 }
 
-
-
 /*GUI drag zones and child elements*/
 .GUI-line {
-    margin: 8 20;
-    padding: 8 0;
+    margin: .5em 1em;
+    padding: .25em;
 
     display: block;
 }
-/* doesn't seem to do anything?? */
-/* .GUI-line > div:hover {
-    background-color: var(--input-hover-color);
-} */
+.GUI-line > * {
+    display: inline-block;
+    vertical-align: middle;
+}
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
+}
+.drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
+    background-color: var(--input-hover-color);
 }
 .drag-chord {
     background-color: lightgray;
     font: var(--main-text-color);
     color: black;
-    border: 1.5px solid black;
-    /* padding: 10px; */
+    border: 2px solid black;
     border-radius: var(--border-radius);
-    /* margin: 5px; */
+    padding: .4em .35em .3em .35em;
+    margin: .5em;
     text-align: center;
 }
 .spacer-bar, .spacer-dot {
     background-color: black;
-    /* margin: 5px; */
+    margin: .5em;
     border-radius: var(--border-radius);
-    display: inline-block;
-    vertical-align: middle;
 }
 .spacer-bar {
-    width: 10px;
-    height: 40px;
+    width: 1em;
+    height: 3em;
 }
 .spacer-dot {
-    width: 20px;
-    height: 20px;
+    width: 1.5em;
+    height: 1.5em;
 }
 .sort-select, .sort-drag {
     background-color: var(--input-active-color);
