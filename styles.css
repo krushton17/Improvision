@@ -23,14 +23,41 @@
     --GUI-text-color: black;
 
 }
-
-html, body {
+html {
+    /* font: var(--main-font);
+    color: var(--main-text-color);
+    background-color: var(--main-bg-color);
+    overflow: hidden; */
+    height: 100vh;
+    width: 100vw;
+}
+body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
-    
-    display: flex;
-    flex-flow: column nowrap;
+    /* overflow: hidden; */
+    height: 100vh;
+    margin: 0 1em;
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: 1fr min-content;
+    grid-template-rows: max-content 1fr;
+    grid-template-areas: 
+        'diagram dashboard'
+        'gui text-box';
+}
+@media (max-width:960px) {
+    body {
+        grid-template-columns: 1fr min-content; 
+        grid-template-rows: max-content 1fr;         
+        grid-template-areas: 
+            'diagram diagram'
+            'gui dashboard';
+    }
+    #text-wrapper {
+        display:none !important;
+    }
 }
 
 /*diagram-----------------------------------------------*/
@@ -40,7 +67,7 @@ html, body {
     overflow: hidden;
     background-color: black;
     
-    flex: none;
+    grid-area: diagram;
     
     display: flex;
     flex-flow: row nowrap;
@@ -98,19 +125,11 @@ html, body {
     stroke: none;
 }
 
-/* everything but the diagram */
-#main-content {
-    flex: 1 1 0;
-
-    display: flex;
-    flex-flow: column nowrap;
-}
-
 /*inputs-----------------------------------------------*/
-label {
+/* label {
     text-align: center;
     margin: 10 10;
-}
+} */
 fieldset {
     -webkit-appearance: none;
 }
@@ -125,7 +144,7 @@ input, textarea {
     font: inherit;
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
-    display: block;
+    /* display: block; */
     /* centers it */
     margin-left: auto;
     margin-right: auto;
@@ -161,15 +180,16 @@ input[type=number]::-webkit-outer-spin-button {
 
 
 /* song mode playback dashboard-------------------------- */
-#playback-dash, #song-metadata {
-    flex: 0 0 content;
+#playback-dash, {
+    /* for debugging purposes only, maybe */
+    /* height: 10em; */
+    /* display: block; */
 
-    display: flex;
-    flex-flow: row wrap;
+    grid-area: dashboard;
 }
-@media (max-width:960px) {
+/* @media (max-width:960px) {
     #song-metadata { display: none; }
-}
+} */
 #title {
     width: 40ch;
 }
@@ -182,7 +202,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /*song editor-----------------------------------------------*/
-#song-editor {
+/* #song-editor {
     color: var(--GUI-text-color);
     border: var(--input-border);
     padding: 10px;
@@ -195,16 +215,22 @@ input[type=number]::-webkit-outer-spin-button {
 
     display: flex;
     flex-flow: row nowrap;
-}
+} */
 #GUI-wrapper {
-    flex: 1 1 0;
+    grid-area: gui;
+    /* relative to the body, not the grid cell */
+    /* height: 50%; */
+    /* width: min-content; */
+    min-height: 0;
 
+    display: flex;
     flex-flow: row nowrap;
 } 
 /* chord menu, etc. */
 #chord-menu-wrapper {
     /* ideal width for chord draggables, inc. margin/padding */
     width: 10ch;
+    /* height: 100%; */
     text-align: center;
     overflow: hidden;
 
@@ -219,7 +245,7 @@ input[type=number]::-webkit-outer-spin-button {
     overflow-y: scroll;
     overflow-x: hidden;
 
-    flex: 1 1 0;
+    flex: 1 1 auto;
 }
 #chord-menu > * {
     /* override other drag-drop settings */
@@ -230,7 +256,7 @@ input[type=number]::-webkit-outer-spin-button {
 #trash, #spacer-menu {
     overflow: hidden;
 
-    flex: 0 0 content;
+    flex: 0 0 1em;
 }
 #trash > * {
     display: none;
@@ -239,6 +265,7 @@ input[type=number]::-webkit-outer-spin-button {
 /* section menu */
 #section-wrapper {
     flex: 1 1 auto;
+    /* height: 100%; */
 
     display: inline-flex;
     flex-flow: column nowrap;
@@ -247,22 +274,20 @@ input[type=number]::-webkit-outer-spin-button {
     flex: none;
 
     display: flex;
-    flex-flow: row wrap;
+    flex-flow: row nowrap;
 }
 #tab-select > * {
     margin-left: .25em;
     margin-right: .25em;
+    display: inline-block;
 }
 #section-order, #repeat-order {
     width: 12ch;
 }
-.tab {
-    display: inline-block !important;
-}
 #tab-content-wrapper {
     overflow: scroll;
 
-    flex: 1 1 0;
+    flex: 1 1 auto;
 }
 .tab-content {
     border: var(--tab-content-border);
@@ -275,27 +300,29 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* editor view switcher */
-#editor-expander {
+/* #editor-expander {
     background-color: blue;
 
     flex: none;
-}
+} */
 #GUI-wrapper, #text-wrapper {
     /* doesn't work, even if I use width instead of display */
     /* transition: 2s */
 }
-.active-editor {
+/* .active-editor {
     display: inline-flex;
 }
 .inactive-editor {
     display: none;
-    /* max-width: 40px; */
-}
+    max-width: 40px;
+} */
 
 /* text editor */
 #text-wrapper {
-    flex: none; 
+    grid-area: text-box; 
+    height: 40%;
 
+    display: flex;
     flex-flow: column nowrap;
 }
 #file-container {
@@ -304,10 +331,12 @@ input[type=number]::-webkit-outer-spin-button {
     border: var(--input-border);
     border-radius: var(--border-radius);
     text-align: center;
-    width: 150px;
+    width: 100%;
     font: inherit;
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
+
+    flex: 0 0 auto;
 }
 #file-container:hover {
     background-color: var(--input-hover-color);
@@ -323,9 +352,11 @@ input[type=number]::-webkit-outer-spin-button {
 }
 textarea {
     width: 30ch;
+    /* height: max-content; */
     resize: none;
     text-align: left;
     white-space: pre-line;
+    display: block;
 
     flex: 1 1 0;
 }
@@ -334,6 +365,8 @@ textarea {
 .GUI-line {
     margin: .5em 1em;
     padding: .25em;
+    /* doesn't overflow properly */
+    /* width: max-content; */
 
     display: block;
 }

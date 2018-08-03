@@ -13,17 +13,17 @@
 </head>
 <body>
     <!-- diagram -->
-    <div id='diagram'>
+    <span id='diagram'>
         <span id='head-container'>
             <svg id='head'></svg>
         </span><span id='fret-container'>
             <svg id='fretboard'></svg>
         </span>
-    </div>
-<div id='main-content'>
+    </span>
+<!-- <div id='main-content'> -->
     <!-- song mode -->
     <!-- playback dashboard -->
-    <div id='playback-dash'>
+    <span id='playback-dash'>
         <label>Play/Pause
             <input type='button' id='play/pause' value='play' class='button'>    
         </label>
@@ -42,7 +42,7 @@
         <label>Counter:
             <input type='text' id='counter' readonly>
         </label>
-    </div>
+    </span>
     <!-- song metadata -->
     <!-- <hr class='divider'>
     <div id='song-metadata'>
@@ -57,7 +57,7 @@
         </label>
     </div> -->
     <!-- song editor GUI -->
-    <div id='song-editor'>
+    <!-- <div id='song-editor'> -->
         <!-- chord menu -->
         <span id='GUI-wrapper' class='active-editor'>
             <span id='chord-menu-wrapper'>
@@ -90,10 +90,10 @@
                 <div id='tab-content-wrapper'></div>
             </span>
         </span>
-        <span id='editor-expander'>
+        <!-- <span id='editor-expander'>
             <input type='button' id='toggle-GUI' value='<-show/hide'>
             <input type='button' id='toggle-text' value='show/hide->'>
-        </span>
+        </span> -->
         <!-- song text editor -->
         <span id='text-wrapper' class='active-editor'>
             <div id='file-container'>
@@ -102,7 +102,7 @@
             </div>
             <textarea id='textEditor' value='CM7 Cm7 Cdim7'></textarea>
         </span>
-    </div>
-</div>
+    <!-- </div> -->
+<!-- </div> -->
 </body>
 </html>
