@@ -6,6 +6,7 @@
     --mono-font: 20px 'Cutive Mono', Courier, monospace;
 
     --border-radius: 5px;
+    --grid-gap: .5rem;
 
     --input-bg-color: lightgray;
     --input-text-color: black;
@@ -18,16 +19,12 @@
     --text-input-bg-color: rgb(44, 36, 36);
     --text-input-text-color: lightcyan;
 
-    --tab-content-bg-color: white;
-    --tab-content-border: 2px solid black;
-    --GUI-text-color: black;
+    --section-bg-color: white;
+    --section-border: 2px solid black;
+    --gui-text-color: black;
 
 }
 html {
-    /* font: var(--main-font);
-    color: var(--main-text-color);
-    background-color: var(--main-bg-color);
-    overflow: hidden; */
     height: 100vh;
     width: 100vw;
 }
@@ -35,9 +32,10 @@ body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
-    /* overflow: hidden; */
+
+    /* really weird behavior here... */
     height: 100vh;
-    margin: 0 1em;
+    margin: 0;
     box-sizing: border-box;
 
     display: grid;
@@ -46,11 +44,12 @@ body {
     grid-template-areas: 
         'diagram dashboard'
         'gui text-box';
+    grid-gap: var(--grid-gap);
 }
 @media (max-width:960px) {
     body {
-        grid-template-columns: 1fr min-content; 
-        grid-template-rows: max-content 1fr;         
+        /* grid-template-columns: 1fr min-content; 
+        grid-template-rows: max-content 1fr;          */
         grid-template-areas: 
             'diagram diagram'
             'gui dashboard';
@@ -59,11 +58,16 @@ body {
         display:none !important;
     }
 }
+/* inline text using unicode symbols */
+.symbol {
+    font-size:2.5em;
+    vertical-align: middle;
+}
 
 /*diagram-----------------------------------------------*/
 #diagram {
-    margin: 10px;
-    padding-bottom: 10px;
+    /* margin: 10px; */
+    /* padding-bottom: 10px; */
     overflow: hidden;
     background-color: black;
     
@@ -74,8 +78,6 @@ body {
 }
 #head-container {
     flex: none;
-
-    display: inline-block;
 }
 #fret-container {
     cursor: move;
@@ -83,8 +85,6 @@ body {
     overflow-y: hidden;
 
     flex: 1 1 0;
-
-    display: inline-block;
 }
 .fret {
     stroke: gray;
@@ -125,35 +125,32 @@ body {
     stroke: none;
 }
 
-/*inputs-----------------------------------------------*/
-/* label {
-    text-align: center;
-    margin: 10 10;
-} */
-fieldset {
+/*inputs-------------------------------------------*/
+input, textarea, .button {
     -webkit-appearance: none;
-}
-input, textarea {
-    -webkit-appearance: none;
-    cursor: pointer;
+
+    /* centers it */
+    margin: auto;
+    height: 2rem;
+    /* no bigger than it needs to be, but at least 2rem */
+    min-width: 2rem;
+    max-width: min-content;
+
+    background-color: var(--input-bg-color);
+    
     border: var(--input-border);
     border-radius: var(--border-radius);
-    text-align: center;
-    padding: .15em .25em .25em .25em;
-    margin: .5em;
-    font: inherit;
-    background-color: var(--input-bg-color);
+
     color: var(--input-text-color);
-    /* display: block; */
-    /* centers it */
-    margin-left: auto;
-    margin-right: auto;
+    text-align: center;
 }
-input[type=checkbox] {
-    height: 1.5em;
-    width: 1.5em;
+input[type=button], .button {
+    font-size:1.5rem;
 }
-input[type=checkbox]:hover, input[type=button]:hover {
+input[type=button].symbol, .button.symbol {
+    padding: 0 .25em .15em .25em;
+}
+input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
     background-color: var(--input-hover-color);
     cursor: pointer;
 }
@@ -162,7 +159,9 @@ input[type=button].active, input[type=checkbox]:checked {
 }
 textarea, input[type=text], input[type=number] {
     cursor: text;
+
     background-color: var(--text-input-bg-color);
+
     font: var(--mono-font);
     color: var(--text-input-text-color);
 }
@@ -174,53 +173,50 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
 }
-#file-load {
-    display: block;
-}
-
 
 /* song mode playback dashboard-------------------------- */
-#playback-dash, {
-    /* for debugging purposes only, maybe */
-    /* height: 10em; */
-    /* display: block; */
-
+#playback-dash {
     grid-area: dashboard;
+
+    display: grid;
+    grid-template-areas: 
+        'buttons buttons'
+        '. tempo'
+        '. meter'
+        '. swing'
+        '. count-in'
+        'counter counter';
+    justify-content: center;
+    grid-gap: var(--grid-gap);
+}
+#playback-dash > label {
+    margin: auto 0;
+
+    text-align: right;
 }
 /* @media (max-width:960px) {
     #song-metadata { display: none; }
 } */
-#title {
-    width: 40ch;
+#playback-buttons {
+    grid-area: buttons;
+    margin: 0 auto;
 }
-#tempo, #time-sig, #count-in {
+#tempo, #meter, #count-in {
     width: 6ch;
 }
-/* set for max counter width (4/4:16chars) */
-#writer, #transcriber, #counter {
+#counter {
+    grid-area: counter;
+    /* set for max counter width (4/4:16chars) */
     width: 18ch;
+
+    font-size: .85em;
 }
 
 /*song editor-----------------------------------------------*/
-/* #song-editor {
-    color: var(--GUI-text-color);
-    border: var(--input-border);
-    padding: 10px;
-    margin: 10px; 
-    border-radius: var(--border-radius);
-    background-color: white;
-    overflow: hidden;
-
-    flex: 1 1 0;
-
-    display: flex;
-    flex-flow: row nowrap;
-} */
-#GUI-wrapper {
+/* chord menu---------------------------------------------- */
+#gui-wrapper {
     grid-area: gui;
-    /* relative to the body, not the grid cell */
-    /* height: 50%; */
-    /* width: min-content; */
+
     min-height: 0;
 
     display: flex;
@@ -228,16 +224,19 @@ input[type=number]::-webkit-outer-spin-button {
 } 
 /* chord menu, etc. */
 #chord-menu-wrapper {
-    /* ideal width for chord draggables, inc. margin/padding */
-    width: 10ch;
-    /* height: 100%; */
-    text-align: center;
     overflow: hidden;
-
     flex: none;
+   /* ideal width for chord draggables, inc. margin/padding */
+    width: 10ch;
+
+    text-align: center;
 
     display: inline-flex;
     flex-flow: column nowrap;
+}
+#chord-menu-wrapper > * {
+    background-color: white;
+    color: black;
 }
 #chord-menu {
     /* wider than its container to hide scrollbar */
@@ -254,145 +253,93 @@ input[type=number]::-webkit-outer-spin-button {
     width: 6ch !important;
 }
 #trash, #spacer-menu {
-    overflow: hidden;
-
-    flex: 0 0 1em;
+    flex: 0 0 auto;
+}
+#spacer-menu > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+#trash {
+    height: 50;
 }
 #trash > * {
+    /* prevents chords from appearing here before being deleted */
     display: none;
 }
 
-/* section menu */
-#section-wrapper {
-    flex: 1 1 auto;
-    /* height: 100%; */
-
-    display: inline-flex;
-    flex-flow: column nowrap;
-}
+/* section menu ---------------------------------------*/
 #section-menu {
-    flex: none;
+    flex: 1 1 auto;
+
+    display: inline-grid;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+        '. . . . .'
+        'key sections pattern repeat-pattern repeat'
+        'content content content content content';
+    grid-gap: var(--grid-gap);
+}
+#section-menu > label {
+    text-align: center;
+}
+#key {
+    grid-area: key;
+    width: 4ch;
+}
+#section-select {
+    grid-area: sections;
 
     display: flex;
     flex-flow: row nowrap;
 }
-#tab-select > * {
-    margin-left: .25em;
-    margin-right: .25em;
-    display: inline-block;
+#pattern {
+    grid-area: pattern;
 }
-#section-order, #repeat-order {
+#repeat-pattern {
+    grid-area: repeat-pattern;
+}
+#pattern, #repeat-pattern {
     width: 12ch;
 }
-#tab-content-wrapper {
+#repeat-toggle {
+    grid-area: repeat;
+}
+#section-wrapper {
     overflow: scroll;
+    background-color: var(--section-bg-color);
 
-    flex: 1 1 auto;
+    grid-area: content;
 }
-.tab-content {
-    border: var(--tab-content-border);
-    background-color: var(--tab-content-bg-color);
-    border-radius: var(--border-radius);
-    /* overflow: scroll; */
-    margin: 10 0;
-    
+.section {
     display: none;
 }
-
-/* editor view switcher */
-/* #editor-expander {
-    background-color: blue;
-
-    flex: none;
-} */
-#GUI-wrapper, #text-wrapper {
-    /* doesn't work, even if I use width instead of display */
-    /* transition: 2s */
-}
-/* .active-editor {
-    display: inline-flex;
-}
-.inactive-editor {
-    display: none;
-    max-width: 40px;
-} */
-
-/* text editor */
-#text-wrapper {
-    grid-area: text-box; 
-    height: 40%;
-
-    display: flex;
-    flex-flow: column nowrap;
-}
-#file-container {
-    cursor: pointer;
-    position: relative;
-    border: var(--input-border);
-    border-radius: var(--border-radius);
-    text-align: center;
-    width: 100%;
-    font: inherit;
-    background-color: var(--input-bg-color);
-    color: var(--input-text-color);
-
-    flex: 0 0 auto;
-}
-#file-container:hover {
-    background-color: var(--input-hover-color);
-}
-#file-container [type=file] {
-    cursor: inherit;
-    min-height: 100%;
-    min-width: 100%;
-    opacity: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-textarea {
-    width: 30ch;
-    /* height: max-content; */
-    resize: none;
-    text-align: left;
-    white-space: pre-line;
-    display: block;
-
-    flex: 1 1 0;
-}
-
-/*GUI drag zones and child elements*/
-.GUI-line {
-    margin: .5em 1em;
-    padding: .25em;
-    /* doesn't overflow properly */
+/*gui drag zones and child elements*/
+.gui-line {
+    /* this widens the whole section wrapper, but without it the line wraps instead of scrolling sideways */
     /* width: max-content; */
-
-    display: block;
 }
-.GUI-line > * {
+.gui-line > * {
     display: inline-block;
     vertical-align: middle;
 }
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
+    margin: .5em;
 }
 .drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
     background-color: var(--input-hover-color);
 }
 .drag-chord {
-    background-color: lightgray;
-    font: var(--main-text-color);
-    color: black;
+    background-color: var(--input-bg-color);
+    color: var(--input-text-color);
+
     border: 2px solid black;
     border-radius: var(--border-radius);
+
     padding: .4em .35em .3em .35em;
-    margin: .5em;
-    text-align: center;
 }
 .spacer-bar, .spacer-dot {
     background-color: black;
-    margin: .5em;
     border-radius: var(--border-radius);
 }
 .spacer-bar {
@@ -410,6 +357,44 @@ textarea {
     background-color: lightgray;
     opacity: .4;
 }
-.current-chord-GUI {
+.current-chord-gui {
     border-color: red;
+}
+
+/* text editor ---------------------------------*/
+#text-wrapper {
+    grid-area: text-box;
+
+    display: flex;
+    flex-flow: column nowrap;
+}
+#song-metadata {
+    flex: 0 0 auto;
+
+    display: grid;
+    grid-template-areas: 
+        '. .'
+        '. .'
+        '. .';
+    grid-gap: var(--grid-gap);
+}
+#song-metadata > label {
+    margin: auto 0;
+    text-align: right;
+}
+#song-metadata > input {
+    margin: 0;
+}
+#text-controls {
+    margin: auto;
+}
+#upload {
+    display: none;
+}
+#text-editor {
+    flex: 1 1 auto;
+    min-width: 30ch;
+
+    resize: none;
+    text-align: left;
 }

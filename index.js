@@ -253,7 +253,7 @@ class Song {
         this.title = header[0];
         this.key = header[1];
         this.tempo = header[2];
-        this.timeSig = (function() {
+        this.meter = (function() {
             //numerator
             let beatsPerMeasure = +header[3].match(/^\d+/)[0];
             //denominator
@@ -268,7 +268,7 @@ class Song {
                 beatUnits: beatUnits,
                 swing: swing
             };
-        })();//end of timeSig parsing
+        })();//end of meter parsing
         this.singleStruct = /;.*;/.exec(text)[0].slice(1,-1).split(',');
         this.repeatStruct = /:.*:/.exec(text)[0].slice(1,-1).split(',');
         //create empty variables to store iteration results
@@ -302,11 +302,11 @@ class Song {
                         components = [];
                     }
                     //if there is too much information in the measure, generate an error message
-                    if (components.length > this.timeSig.beatsPerMeasure) {
+                    if (components.length > this.meter.beatsPerMeasure) {
                         console.log('This measure was truncated because it was too long!')
                     }
                     //set the length of the array to the number of beats in each measure
-                    components.length = this.timeSig.beatsPerMeasure;
+                    components.length = this.meter.beatsPerMeasure;
                     //loop through the components
                     for (let i = 0; i < components.length; i++) {
                         //for consistency, take out the periods
@@ -647,7 +647,7 @@ let timer = {
         //!!pull this from the textbox
         //if the time signature is in 8ths, 1 count per beat is enough
         //  otherwise 3 or 4, depending on whether swing == true
-        return song.timeSig.beatUnits == 8 || song.timeSig.swing ? 3 : 4;
+        return song.meter.beatUnits == 8 || song.meter.swing ? 3 : 4;
     },
     //convert tempo to milliseconds (factoring in counts per beat)
     get tempoMil() {
@@ -727,17 +727,17 @@ let timer = {
         //increment counter
         this.counter++;
 
-        let clear = document.querySelectorAll('.current-chord-GUI');
+        let clear = document.querySelectorAll('.current-chord-gui');
         console.log(clear.classList);
         for (let obj of clear) {
-            obj.classList.remove('current-chord-GUI');
+            obj.classList.remove('current-chord-gui');
         }
         this.matchGUItoChord(beat);
         /*
         //highlight the current chord in the GUI
         if (typeof this.nextGUIel != 'undefined') {
-            d3.selectAll('.current-chord-GUI').classed('current-chord-GUI', false);
-            this.nextGUIel.classed('current-chord-GUI', true); 
+            d3.selectAll('.current-chord-gui').classed('current-chord-gui', false);
+            this.nextGUIel.classed('current-chord-gui', true); 
         }
         //queue the GUI element that matches the next chord
         this.nextGUIel = d3.select(`#section-${song.structure[this.sectionIndex]}`)
@@ -793,7 +793,7 @@ let timer = {
                 .childNodes[this.lineIndex]
                 .querySelectorAll('.drag-chord')[this.componentIndex];
         
-        this.currentComponent.classList.add('current-chord-GUI');
+        this.currentComponent.classList.add('current-chord-gui');
         console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
             .querySelectorAll('.drag-chord')[this.componentIndex]);
 
@@ -804,7 +804,7 @@ let timer = {
     //!!move metronome sound to update function, or make it its own?
     marquis: function() {
         //number of counts so far this measure
-        let count = this.counter % (song.timeSig.beatsPerMeasure*this.countsPerBeat);
+        let count = this.counter % (song.meter.beatsPerMeasure*this.countsPerBeat);
         //number of counts so far this beat
         let subCount = count % this.countsPerBeat;
         //text to append to the marquis textbox
@@ -825,7 +825,7 @@ let timer = {
             marquis = (count/this.countsPerBeat+1);
             this.metronome.play();
         //if this is an upbeat (e.g. an 8th note in common time)
-        } else if (subCount % 2 == 0 && song.timeSig.beatUnits !=8 && ! song.timeSig.swing) {
+        } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
             marquis = '&';
         //if this is a sixteenth note or a tripled 8th note
         } else {
@@ -843,13 +843,13 @@ let timer = {
     playPause: function() {
         if (this.paused) {
             this.paused = false;
-            playBtn.value = 'pause';
+            playBtn.value = '\u{25AE}\u{25AE}';
             //set timer, and convert bpm to milliseconds:
             this.reset();
             this.beat = setInterval(this.repeat.bind(this), this.tempoMil);
         } else {
             this.paused = true;
-            playBtn.value = 'play';
+            playBtn.value = '\u{25B6}';
             //this doesn't stop animations that have already started...
             clearInterval(this.beat);
             //this does
@@ -908,7 +908,7 @@ C[Am7||]`;
 
 let song = new Song(contents);
 
-document.getElementById('textEditor').value = contents;
+document.getElementById('text-editor').value = contents;
 
 //file handling: NOT deprecated!!
 /*
@@ -921,7 +921,7 @@ function localFile(e) {
     reader.onload = function(e) {
         let contents = e.target.result;
         //display the file contents in the text box
-        document.getElementById('textEditor').value = contents;
+        document.getElementById('text-editor').value = contents;
         //parse song data from file
         song = new Song(contents);
         editorGUI.setup();
@@ -929,7 +929,7 @@ function localFile(e) {
     reader.readAsText(file);
 }
 //rearrange this
-document.getElementById('file-load').addEventListener('change', localFile, false);
+document.getElementById('upload').addEventListener('change', localFile, false);
 */
 
 let editorGUI = {
@@ -1004,24 +1004,23 @@ let editorGUI = {
         for (let section of Object.keys(song.components).sort()) {
             
             //tab selector button
-            d3.select('#tab-select').append('input')
+            d3.select('#section-select').append('input')
                 .attr('type', 'button')
-                .attr('class', 'tab')
                 .attr('id', 'section-selector-' + section)
                 .attr('value', section)
                 //!!add (right-click || touch-and-hold) event to edit
                 .attr('onclick', `tabChange(event, 'section-${section}')`);
             
             //tab content
-            let sectionDiv = d3.select('#tab-content-wrapper').append('div')
+            let sectionDiv = d3.select('#section-wrapper').append('div')
                 .attr('id', 'section-' + section)
-                .attr('class', 'tab-content')
+                .attr('class', 'section')
             //loop through lines in section
             for (let i = 0; i < song.components[section].length; i++) {
                 let line = song.components[section][i];
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
-                    .attr('class', 'GUI-line')
+                    .attr('class', 'gui-line')
                 //loop through measures in line
                 for (let j = 0; j < line.length; j++) {
                     let measure = line[j];
@@ -1052,7 +1051,7 @@ let editorGUI = {
         }//end of section loop
 
         //select the line divs, make their components draggable
-        for (let e of document.querySelectorAll('.GUI-line')) {
+        for (let e of document.querySelectorAll('.gui-line')) {
             this.dragBoxes.push(new Sortable(e, {
                 group: 'editor',
                 animation: 500,
@@ -1070,7 +1069,7 @@ let editorGUI = {
 //make the buttons bring up the tab content for each section
 function tabChange(evt, tabID) {
     let tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tab-content");
+    tabcontent = document.getElementsByClassName("section");
     for (let i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
@@ -1087,10 +1086,10 @@ editorGUI.setup();
 //!!placeholder until this becomes part of song loading procedure
 editorGUI.GUIfromSong();
 
-//show/hide GUI vs text editor
+//show/hide gui vs text editor
 //!!may not be any point in hiding either if the screen is big
 function editorToggle(GUIselect) {
-    let GUIwrap = document.querySelector('#GUI-wrapper');
+    let GUIwrap = document.querySelector('#gui-wrapper');
     let textWrap = document.querySelector('#text-wrapper');
     let selected = GUIselect ? GUIwrap : textWrap;
     let other = GUIselect ? textWrap : GUIwrap;
@@ -1105,7 +1104,7 @@ function editorToggle(GUIselect) {
     }
 }
 //anonymous functions needed to prevent these being read as IIFEs
-document.querySelector('#toggle-GUI').addEventListener('click', function(){editorToggle(true)});
+document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
 document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
 
 
@@ -1116,7 +1115,7 @@ function GUItoText() {
     //!!add header info
 
     //loop through the GUI elements
-    let sections = document.querySelectorAll('.tab-content');
+    let sections = document.querySelectorAll('.section');
     for (let section of sections) {
         //start each section with a line break,
         //  the name of the section, and an opening bracket
