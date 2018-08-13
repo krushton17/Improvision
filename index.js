@@ -1160,6 +1160,7 @@ let audio = {
     context: undefined,
     bass: undefined,
     treble: [],
+    //cymbals and/or other percussion
     gain: {
         perc: undefined,
         bass: undefined,
@@ -1176,6 +1177,7 @@ let audio = {
         return this.context.currentTime;
     },
 
+    //inital context creation
     setup: function() {
         this.context = new AudioContext();
         this.gain.master = this.context.createGain();
@@ -1191,6 +1193,7 @@ let audio = {
         }
     },
 
+    //play notes (does not play percussion)
     play: function(chord) {
         //stop all previous notes
         this.stop();
@@ -1226,6 +1229,7 @@ let audio = {
         }
     },
 
+    //stop all notes (doesn't work on percussion)
     stop: function() {
         if (this.bass) {
             this.bass.stop();
@@ -1235,15 +1239,13 @@ let audio = {
         }
     },
 
-    //!!not sure if "octave" is the best way to call this; clamp chord-tones to a 2-octave range, bass tones to a 1-octave range. I guess this is still probably the most readable way to do it though
+    //obtain frequency in Hz from encoded (numbered) note
     frequency: function(note, octave) {
         //since my scale starts at A, but standard octave numbering starts at C
         if (note&12 > 2) { octave-=1; }
         //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
         //  f = Math.pow(2,(m-69)/12*440)
-        return Math.pow(2,note/12+octave-4)*440
-        //this.oscillator.frequency.setTargetAtTime(freq, this.context.currentTime, 0);
-        //this.bass.frequency.value = freq;
+        return Math.pow(2,note/12+octave-4)*440;
     },
 
     percussion: function(snare = false, cymbal = false, open = false, metronome = false, metronome1 = false) {
@@ -1251,9 +1253,10 @@ let audio = {
         let context = this.context;
         let envelope = context.createGain();
 
-        //non-integer harmonics
+        //!!non-integer harmonics, except for metronome (change this?)
         let ratios = metronome1? [100] : metronome ? [50] : [2,3,4.16,5.43,6.79,8.21];
         let fundamental = snare || cymbal ? 40 : 20; //not synthesized, just used for calculations
+        //make a way to cut off open cymbal sounds
         let duration = now + (cymbal ? open ? 10 : .3 : snare? .2 : .5);
         let dropoff = now + .2;
 
@@ -1303,8 +1306,7 @@ let audio = {
             //connect graph
             bandpass.connect(highpass);
             highpass.connect(envelope);
-        } 
-        envelope.connect(audio.gain.perc);
+        } //end of cymbal portion
 
         //generate range of frequencies
         ratios.forEach(function(ratio) {
@@ -1324,142 +1326,16 @@ let audio = {
             }
             osc.start(now);
             osc.stop(duration);
-        });
+        });//end of frequency generation
 
         //volume envelope
-        //!!5 seems excessive, but otherwise it's too quiet!
+        envelope.connect(audio.gain.perc);
+        //!!5 seems excessive, but otherwise the kick drum is too quiet!
         envelope.gain.value = metronome ? .5 : cymbal || snare ? 1 : 5;
         envelope.gain.exponentialRampToValueAtTime(0.0001, duration);   
     }//end of percussion function
 }
 audio.setup();
-
-//use closures to generate different types of sounds
-class Kick {
-    setup() {
-        this.osc = audio.context.createOscillator();
-        this.gain = audio.context.createGain();
-        this.osc.connect(this.gain);
-        this.gain.connect(audio.context.destination);
-    }
-
-    constructor() {
-        this.setup();
-
-        this.osc.frequency.setValueAtTime(150,audio.now);
-        this.osc.frequency.exponentialRampToValueAtTime(0.001, audio.now + 0.1);
-        //this.osc.type = 'triangle';
-    
-        this.gain.gain.setValueAtTime(1, audio.now);
-        this.gain.gain.exponentialRampToValueAtTime(0.001, audio.now + .5);
-
-        this.osc.start(audio.now);
-        this.osc.stop(audio.now + .5);
-    }
-}
-
-class HiHat {
-    constructor() {
-        let now = audio.now;
-        let context = audio.context;
-        let gain = context.createGain();
-
-        //bandpass: frequencies outside the given range are attenuated
-        let bandpass = context.createBiquadFilter();
-        bandpass.type = 'bandpass';
-        bandpass.frequency.value = 10000;
-
-        //highpass: frequencies below the given frequency are attenuated
-        let highpass = context.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.value = 7000;
-
-        //connect graph
-        bandpass.connect(highpass);
-        highpass.connect(gain);
-        gain.connect(audio.gain.perc);
-
-        //non-integer harmonics from 808 hi-hat (?)
-        let ratios = [2,3,4.16,5.43,6.79,8.21];
-        let fundamental = 40; //not synthesized, just used for calculations
-        ratios.forEach(function(ratio) {
-            let osc = context.createOscillator();
-            osc.type = 'square';
-            osc.frequency.value = fundamental * ratio;
-            //for bass drum:
-            //osc.frequency.exponentialRampToValueAtTime(0.001, audio.now + 0.2);
-            osc.connect(bandpass);
-            osc.start(now);
-            osc.stop(now + .3);
-        });
-
-        //volume envelope
-        gain.gain.value=1;
-        gain.gain.exponentialRampToValueAtTime(0.00001, now + .3);
-    }
-}
-
-class Snare {
-    setup() {
-        this.noise = audio.context.createBufferSource();
-        this.noise.buffer = this.noiseBuffer();
-
-        //cuttof frequencies below 1000hz
-        let noiseFilter = audio.context.createBiquadFilter();
-        noiseFilter.type = 'highpass';
-        noiseFilter.frequency.value = 1000;
-        this.noise.connect(noiseFilter);
-        //setup gain to create normal distribution of remaining frequencies
-        this.noiseEnvelope = audio.context.createGain();
-        noiseFilter.connect(this.noiseEnvelope);
-        this.noiseEnvelope.connect(audio.context.destination);
-
-        //create oscillator; triangle wave is supposed to sound better as a snare
-        this.osc = audio.context.createOscillator();
-        this.osc.type = 'triangle';
-        //setup gain to make a sharp snap
-        this.oscEnvelope = audio.context.createGain();
-        this.osc.connect(this.oscEnvelope);
-        this.oscEnvelope.connect(audio.context.destination);
-    }
-
-    noiseBuffer() {
-        //sample rate = the number of sound samples the system can handle per second; this uses the maximum to generate 1 second of random audio (white noise; equal volume at all frequencies)
-        let bufferSize = audio.context.sampleRate;
-        let buffer = audio.context.createBuffer(1, bufferSize, bufferSize);
-        let output = buffer.getChannelData(0);
-
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
-        }
-
-        return buffer;
-    }
-
-    constructor() {
-        this.setup();
-
-        //snare volume drops off
-        this.noiseEnvelope.gain.setValueAtTime(1,audio.now);
-        this.noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audio.now + 0.2);
-        this.noise.start(time);
-
-        //set membrane frequency
-        this.osc.frequency.setValueAtTime(100, audio.now);
-        //membrane volume drops off
-        this.oscEnvelope.gain.setValueAtTime(0.7, audio.now);
-        this.oscEnvelope.gain.exponentialRampToValueAtTime(0.01, audio.now + 0.1);
-        this.osc.start(audio.now);
-
-        //volume drops off more quickly than with kick drum
-        this.osc.stop(audio.now + 0.2);
-        this.noise.stop(audio.now + 0.2);
-    }
-}
-
-//class (or closure) for set of oscillators that match a series of pitches
-
-
 
 //DEPRECATED BUT USEFUL FOR REFERENCE----------------------------------
 /*
