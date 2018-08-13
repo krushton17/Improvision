@@ -817,20 +817,17 @@ let timer = {
         //if this is the first downbeat of a measure
         if (count == 0 || this.counter == this.countIn) {
             marquis = '1';
-            new Snare(audio.now);
-            //new Kick(audio.now, 150);
+            audio.percussion(false, false, false, true, true);
             //clear the marquis
             document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
-            new Snare(audio.now);
-            //new Kick(audio.now, 150);
+            audio.percussion(false, false, false, true);
         //if this is any other downbeat
         } else if (subCount == 0) {
             marquis = (count/this.countsPerBeat+1);
-            new Snare(audio.now);
-            //new Kick(audio.now, 150);
+            audio.percussion(false, false, false, true);
         //if this is an upbeat (e.g. an 8th note in common time)
         } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
             marquis = '&';
@@ -1164,13 +1161,13 @@ let audio = {
     bass: undefined,
     treble: [],
     gain: {
-        drums: undefined,
+        perc: undefined,
         bass: undefined,
         treble: undefined,
         master: undefined,
     },
     gainDefaults: {
-        drums: 1,
+        perc: 1,
         bass: .25,
         treble: .15,
         master: .35,
@@ -1247,7 +1244,93 @@ let audio = {
         return Math.pow(2,note/12+octave-4)*440
         //this.oscillator.frequency.setTargetAtTime(freq, this.context.currentTime, 0);
         //this.bass.frequency.value = freq;
-    }
+    },
+
+    percussion: function(snare = false, cymbal = false, open = false, metronome = false, metronome1 = false) {
+        let now = this.now;
+        let context = this.context;
+        let envelope = context.createGain();
+
+        //non-integer harmonics
+        let ratios = metronome1? [100] : metronome ? [50] : [2,3,4.16,5.43,6.79,8.21];
+        let fundamental = snare || cymbal ? 40 : 20; //not synthesized, just used for calculations
+        let duration = now + (cymbal ? open ? 10 : .3 : snare? .2 : .5);
+        let dropoff = now + .2;
+
+        if (snare) {
+            //generate random noise for snare
+            //buffer = array; memory storage of tiny sound clips
+            let snareBuffer = context.createBufferSource();
+            snareBuffer.buffer = (function() {
+                //sample rate = the number of sound samples the system can handle per second; this uses the maximum to generate 1 second of random audio (white noise; equal volume at all frequencies)
+                let bufferSize = context.sampleRate;
+                let buffer = context.createBuffer(1, bufferSize, bufferSize);
+                let output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 -1;
+                }
+                return buffer;
+            }())
+
+            let snareFilter = context.createBiquadFilter();
+            snareFilter.type = 'highpass';
+            snareFilter.frequency.value = 1000;
+            snareBuffer.connect(snareFilter);
+
+            let snareEnvelope = context.createGain();
+            snareFilter.connect(snareEnvelope);
+            snareEnvelope.connect(this.gain.perc);
+            //end of snare creation
+
+            snareEnvelope.gain.value = 1;
+            snareEnvelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+            snareBuffer.start();
+            snareBuffer.stop(now + .2);
+        }//end of snare portion
+
+        if (cymbal) {
+            //bandpass: frequencies outside the given range are attenuated
+            //don't want this block scoped... this seems messy though
+            var bandpass = context.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 10000;
+    
+            //highpass: frequencies below the given frequency are attenuated
+            let highpass = context.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 7000;
+    
+            //connect graph
+            bandpass.connect(highpass);
+            highpass.connect(envelope);
+        } 
+        envelope.connect(audio.gain.perc);
+
+        //generate range of frequencies
+        ratios.forEach(function(ratio) {
+            let osc = context.createOscillator();            
+            osc.frequency.value = fundamental * ratio;
+
+            if (cymbal) {
+                osc.type = 'square';
+                osc.connect(bandpass);
+            } else {
+                osc.type = metronome ? 'sawtooth' : 'triangle';
+                //if (!metronome) {
+                //    osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff);}
+                osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff)
+
+                osc.connect(envelope);
+            }
+            osc.start(now);
+            osc.stop(duration);
+        });
+
+        //volume envelope
+        //!!5 seems excessive, but otherwise it's too quiet!
+        envelope.gain.value = metronome ? .5 : cymbal || snare ? 1 : 5;
+        envelope.gain.exponentialRampToValueAtTime(0.0001, duration);   
+    }//end of percussion function
 }
 audio.setup();
 
@@ -1265,12 +1348,54 @@ class Kick {
 
         this.osc.frequency.setValueAtTime(150,audio.now);
         this.osc.frequency.exponentialRampToValueAtTime(0.001, audio.now + 0.1);
+        //this.osc.type = 'triangle';
     
         this.gain.gain.setValueAtTime(1, audio.now);
         this.gain.gain.exponentialRampToValueAtTime(0.001, audio.now + .5);
 
         this.osc.start(audio.now);
         this.osc.stop(audio.now + .5);
+    }
+}
+
+class HiHat {
+    constructor() {
+        let now = audio.now;
+        let context = audio.context;
+        let gain = context.createGain();
+
+        //bandpass: frequencies outside the given range are attenuated
+        let bandpass = context.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 10000;
+
+        //highpass: frequencies below the given frequency are attenuated
+        let highpass = context.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.value = 7000;
+
+        //connect graph
+        bandpass.connect(highpass);
+        highpass.connect(gain);
+        gain.connect(audio.gain.perc);
+
+        //non-integer harmonics from 808 hi-hat (?)
+        let ratios = [2,3,4.16,5.43,6.79,8.21];
+        let fundamental = 40; //not synthesized, just used for calculations
+        ratios.forEach(function(ratio) {
+            let osc = context.createOscillator();
+            osc.type = 'square';
+            osc.frequency.value = fundamental * ratio;
+            //for bass drum:
+            //osc.frequency.exponentialRampToValueAtTime(0.001, audio.now + 0.2);
+            osc.connect(bandpass);
+            osc.start(now);
+            osc.stop(now + .3);
+        });
+
+        //volume envelope
+        gain.gain.value=1;
+        gain.gain.exponentialRampToValueAtTime(0.00001, now + .3);
     }
 }
 
@@ -1311,24 +1436,24 @@ class Snare {
         return buffer;
     }
 
-    constructor(time) {
+    constructor() {
         this.setup();
 
         //snare volume drops off
-        this.noiseEnvelope.gain.setValueAtTime(1,time);
-        this.noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+        this.noiseEnvelope.gain.setValueAtTime(1,audio.now);
+        this.noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audio.now + 0.2);
         this.noise.start(time);
 
         //set membrane frequency
-        this.osc.frequency.setValueAtTime(100, time);
+        this.osc.frequency.setValueAtTime(100, audio.now);
         //membrane volume drops off
-        this.oscEnvelope.gain.setValueAtTime(0.7, time);
-        this.oscEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
-        this.osc.start(time);
+        this.oscEnvelope.gain.setValueAtTime(0.7, audio.now);
+        this.oscEnvelope.gain.exponentialRampToValueAtTime(0.01, audio.now + 0.1);
+        this.osc.start(audio.now);
 
         //volume drops off more quickly than with kick drum
-        this.osc.stop(time + 0.2);
-        this.noise.stop(time + 0.2);
+        this.osc.stop(audio.now + 0.2);
+        this.noise.stop(audio.now + 0.2);
     }
 }
 
