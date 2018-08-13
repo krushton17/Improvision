@@ -813,17 +813,17 @@ let timer = {
         //if this is the first downbeat of a measure
         if (count == 0 || this.counter == this.countIn) {
             marquis = '1';
-            this.metronome.play();
+            new Kick(audio.now, 500);
             //clear the marquis
             document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
-            this.metronome.play();
+            new Kick(audio.now, 300);
         //if this is any other downbeat
         } else if (subCount == 0) {
             marquis = (count/this.countsPerBeat+1);
-            this.metronome.play();
+            new Kick(audio.now, 300);
         //if this is an upbeat (e.g. an 8th note in common time)
         } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
             marquis = '&';
@@ -1104,8 +1104,8 @@ function editorToggle(GUIselect) {
     }
 }
 //anonymous functions needed to prevent these being read as IIFEs
-document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
-document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
+// document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
+// document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
 
 
 //convert GUI elements to text
@@ -1150,7 +1150,138 @@ function GUItoText() {
 }//end of GUItoText function
 
 
-//DEPRECATED BUT USEFUL FOR REFERENCE-----------------------------------------------------------------
+// WEB AUDIO API-----------------------------------------
+let audio = {
+    context: undefined,
+    oscillator: undefined,
+    gain: undefined,
+
+    get now() {
+        return this.context.currentTime;
+    },
+
+    setup: function() {
+        //!apparently web audio's timekeeper is more accurate than the default js one, so maybe use that for the timer as well
+        //!!might not work in FireFox; needs to be 'prefixed'
+        this.context = new AudioContext();
+        this.gain = this.context.createGain();
+        this.oscillator = this.context.createOscillator();
+        this.frequency(0,3);
+        this.gain.connect(this.context.destination);
+        //set volume with this.gain.gain.value; 1=default; can go up or down from there, but 1 is supposed to be the max
+        //oscillator is routed through the gain modulator node
+        //to play multiple notes at a time, just connect multiple oscillators (or their gain modulators) to the context destination (or a master gain modulator))--think flowchart; serial connections between audio nodes
+        this.oscillator.connect(this.gain);
+        //this.oscillator.start();
+        //this.context.suspend();
+    },
+
+    play: function() {
+        this.context.resume()
+    },
+    pause: function() {
+        this.context.suspend();
+    },
+
+    //!!not sure if "octave" is the best way to call this; clamp chord-tones to a 2-octave range, bass tones to a 1-octave range. I guess this is still probably the most readable way to do it though
+    frequency: function(note, octave) {
+        //since my scale starts at A, but standard octave numbering starts at C
+        if (note&12 > 2) { octave-=1; }
+        //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
+        //f = Math.pow(2,(m-69)/12*440)
+        freq = Math.pow(2,note/12+octave-4)*440
+        //this.oscillator.frequency.setTargetAtTime(freq, this.context.currentTime, 0);
+        this.oscillator.frequency.value = freq;
+    }
+}
+audio.setup();
+
+//use closures to generate different types of sounds
+class Kick {
+    setup() {
+        this.osc = audio.context.createOscillator();
+        this.gain = audio.context.createGain();
+        this.osc.connect(this.gain);
+        this.gain.connect(audio.context.destination);
+    }
+
+    constructor(time, freq) {
+        this.setup();
+
+        this.osc.frequency.setValueAtTime(freq,time);
+        this.osc.frequency.exponentialRampToValueAtTime(0.001, time + 0.1);
+    
+        this.gain.gain.setValueAtTime(1, time);
+        this.gain.gain.exponentialRampToValueAtTime(0.001, time + .5);
+
+        this.osc.start(time);
+        this.osc.stop(time + .5);
+    }
+}
+
+class Snare {
+    setup() {
+        this.noise = audio.context.createBufferSource();
+        this.noise.buffer = this.noiseBuffer();
+
+        //cuttof frequencies below 1000hz
+        let noiseFilter = audio.context.createBiquadFilter();
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 1000;
+        this.noise.connect(noiseFilter);
+        //setup gain to create normal distribution of remaining frequencies
+        this.noiseEnvelope = audio.context.createGain();
+        noiseFilter.connect(this.noiseEnvelope);
+        this.noiseEnvelope.connect(audio.context.destination);
+
+        //create oscillator; triangle wave is supposed to sound better as a snare
+        this.osc = audio.context.createOscillator();
+        this.osc.type = 'triangle';
+        //setup gain to make a sharp snap
+        this.oscEnvelope = audio.context.createGain();
+        this.osc.connect(this.oscEnvelope);
+        this.oscEnvelope.connect(audio.context.destination);
+    }
+
+    noiseBuffer() {
+        //sample rate = the number of sound samples the system can handle per second; this uses the maximum to generate 1 second of random audio (white noise; equal volume at all frequencies)
+        let bufferSize = audio.context.sampleRate;
+        let buffer = audio.context.createBuffer(1, bufferSize, bufferSize);
+        let output = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        return buffer;
+    }
+
+    constructor(time) {
+        this.setup();
+
+        //snare volume drops off
+        this.noiseEnvelope.gain.setValueAtTime(1,time);
+        this.noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+        this.noise.start(time);
+
+        //set membrane frequency
+        this.osc.frequency.setValueAtTime(100, time);
+        //membrane volume drops off
+        this.oscEnvelope.gain.setValueAtTime(0.7, time);
+        this.oscEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+        this.osc.start(time);
+
+        //volume drops off more quickly than with kick drum
+        this.osc.stop(time + 0.2);
+        this.noise.stop(time + 0.2);
+    }
+}
+
+//class (or closure) for set of oscillators that match a series of pitches
+
+
+
+//DEPRECATED BUT USEFUL FOR REFERENCE----------------------------------
 /*
 let button = document.getElementById('button');
 button.addEventListener('click', update);
