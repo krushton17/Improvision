@@ -701,6 +701,10 @@ let timer = {
         //I don't currently use this, but it may be useful
         //  for when I add MIDI accompaniment
         let currentChord = song.chordLibrary[sequence[beat]];
+        //supposed to play the chord
+        if (currentChord) {
+            audio.play(currentChord);
+        }
         
         //look for the next chord to start the fade-in
         let nextIndex = this.findNextChord(sequence, beat);
@@ -813,17 +817,17 @@ let timer = {
         //if this is the first downbeat of a measure
         if (count == 0 || this.counter == this.countIn) {
             marquis = '1';
-            this.metronome.play();
+            audio.percussion(false, false, false, true, true);
             //clear the marquis
             document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
-            this.metronome.play();
+            audio.percussion(false, false, false, true);
         //if this is any other downbeat
         } else if (subCount == 0) {
             marquis = (count/this.countsPerBeat+1);
-            this.metronome.play();
+            audio.percussion(false, false, false, true);
         //if this is an upbeat (e.g. an 8th note in common time)
         } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
             marquis = '&';
@@ -849,6 +853,7 @@ let timer = {
             this.beat = setInterval(this.repeat.bind(this), this.tempoMil);
         } else {
             this.paused = true;
+            audio.stop();
             playBtn.value = '\u{25B6}';
             //this doesn't stop animations that have already started...
             clearInterval(this.beat);
@@ -1104,8 +1109,8 @@ function editorToggle(GUIselect) {
     }
 }
 //anonymous functions needed to prevent these being read as IIFEs
-document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
-document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
+// document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
+// document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
 
 
 //convert GUI elements to text
@@ -1150,7 +1155,189 @@ function GUItoText() {
 }//end of GUItoText function
 
 
-//DEPRECATED BUT USEFUL FOR REFERENCE-----------------------------------------------------------------
+// WEB AUDIO API-----------------------------------------
+let audio = {
+    context: undefined,
+    bass: undefined,
+    treble: [],
+    //cymbals and/or other percussion
+    gain: {
+        perc: undefined,
+        bass: undefined,
+        treble: undefined,
+        master: undefined,
+    },
+    gainDefaults: {
+        perc: 1,
+        bass: .25,
+        treble: .15,
+        master: .35,
+    },
+    get now() {
+        return this.context.currentTime;
+    },
+
+    //inital context creation
+    setup: function() {
+        this.context = new AudioContext();
+        this.gain.master = this.context.createGain();
+
+        for (let key in this.gain) {
+            if (key=='master') {
+                this.gain[key].connect(this.context.destination);
+            } else {
+                this.gain[key] = this.context.createGain();
+                this.gain[key].connect(this.gain.master);
+            }
+            this.gain[key].gain.value = this.gainDefaults[key];
+        }
+    },
+
+    //play notes (does not play percussion)
+    play: function(chord) {
+        //stop all previous notes
+        this.stop();
+        this.treble = [];
+        let root = encodeNote(chord.root);
+        console.log(root);
+        //assign root to bass
+        this.bass = this.context.createOscillator();
+        this.bass.frequency.value = this.frequency(root, 2);
+        this.bass.type = 'sawtooth';
+        this.bass.connect(this.gain.bass);
+        this.bass.start();
+        //convert chord intervals into absolute notes
+        let treble = [];
+        for (let i of chord.guides) {
+            console.log(i)
+            treble.push((encodeInterval(i) + root)%12);
+        }
+        for (let i of chord.auxExp) {
+            console.log(i)
+            treble.push((encodeInterval(i) + root)%12);
+        }
+        console.log(treble);
+        //create array of oscillators to play treble
+        //connect all new oscillators to respective gains
+        //start oscillators
+        for (let i = 0; i < treble.length; i++) {
+            this.treble.push(this.context.createOscillator())
+            this.treble[i].frequency.value = this.frequency(treble[i], 3);
+            this.treble[i].type = 'sawtooth';
+            this.treble[i].connect(this.gain.treble);
+            this.treble[i].start();
+        }
+    },
+
+    //stop all notes (doesn't work on percussion)
+    stop: function() {
+        if (this.bass) {
+            this.bass.stop();
+            for (let i of this.treble) {
+                i.stop();
+            }
+        }
+    },
+
+    //obtain frequency in Hz from encoded (numbered) note
+    frequency: function(note, octave) {
+        //since my scale starts at A, but standard octave numbering starts at C
+        if (note&12 > 2) { octave-=1; }
+        //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
+        //  f = Math.pow(2,(m-69)/12*440)
+        return Math.pow(2,note/12+octave-4)*440;
+    },
+
+    percussion: function(snare = false, cymbal = false, open = false, metronome = false, metronome1 = false) {
+        let now = this.now;
+        let context = this.context;
+        let envelope = context.createGain();
+
+        //!!non-integer harmonics, except for metronome (change this?)
+        let ratios = metronome1? [100] : metronome ? [50] : [2,3,4.16,5.43,6.79,8.21];
+        let fundamental = snare || cymbal ? 40 : 20; //not synthesized, just used for calculations
+        //make a way to cut off open cymbal sounds
+        let duration = now + (cymbal ? open ? 10 : .3 : snare? .2 : .5);
+        let dropoff = now + .2;
+
+        if (snare) {
+            //generate random noise for snare
+            //buffer = array; memory storage of tiny sound clips
+            let snareBuffer = context.createBufferSource();
+            snareBuffer.buffer = (function() {
+                //sample rate = the number of sound samples the system can handle per second; this uses the maximum to generate 1 second of random audio (white noise; equal volume at all frequencies)
+                let bufferSize = context.sampleRate;
+                let buffer = context.createBuffer(1, bufferSize, bufferSize);
+                let output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 -1;
+                }
+                return buffer;
+            }())
+
+            let snareFilter = context.createBiquadFilter();
+            snareFilter.type = 'highpass';
+            snareFilter.frequency.value = 1000;
+            snareBuffer.connect(snareFilter);
+
+            let snareEnvelope = context.createGain();
+            snareFilter.connect(snareEnvelope);
+            snareEnvelope.connect(this.gain.perc);
+            //end of snare creation
+
+            snareEnvelope.gain.value = 1;
+            snareEnvelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+            snareBuffer.start();
+            snareBuffer.stop(now + .2);
+        }//end of snare portion
+
+        if (cymbal) {
+            //bandpass: frequencies outside the given range are attenuated
+            //don't want this block scoped... this seems messy though
+            var bandpass = context.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 10000;
+    
+            //highpass: frequencies below the given frequency are attenuated
+            let highpass = context.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 7000;
+    
+            //connect graph
+            bandpass.connect(highpass);
+            highpass.connect(envelope);
+        } //end of cymbal portion
+
+        //generate range of frequencies
+        ratios.forEach(function(ratio) {
+            let osc = context.createOscillator();            
+            osc.frequency.value = fundamental * ratio;
+
+            if (cymbal) {
+                osc.type = 'square';
+                osc.connect(bandpass);
+            } else {
+                osc.type = metronome ? 'sawtooth' : 'triangle';
+                //if (!metronome) {
+                //    osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff);}
+                osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff)
+
+                osc.connect(envelope);
+            }
+            osc.start(now);
+            osc.stop(duration);
+        });//end of frequency generation
+
+        //volume envelope
+        envelope.connect(audio.gain.perc);
+        //!!5 seems excessive, but otherwise the kick drum is too quiet!
+        envelope.gain.value = metronome ? .5 : cymbal || snare ? 1 : 5;
+        envelope.gain.exponentialRampToValueAtTime(0.0001, duration);   
+    }//end of percussion function
+}
+audio.setup();
+
+//DEPRECATED BUT USEFUL FOR REFERENCE----------------------------------
 /*
 let button = document.getElementById('button');
 button.addEventListener('click', update);

@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>||: improvision :||</title>
+    <title>&#x1d106; improvision &#x1d107;</title>
     <!-- styles & fonts -->
     <link rel='stylesheet' href='styles.css'>
     <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
@@ -26,6 +26,12 @@
         <div id='playback-buttons'>
             <input type='button' id='play/pause' value='&#9654;' class='symbol'>
             <input type='button' id='stop' value='&#9724;' class='symbol'>
+            &#x1d11e;
+            &#x1d122;
+            &#x1f941;
+            &#x1f568;
+            &#x1f569;
+            &flat;&sharp;&natural;&deg;&#x1d1a9;
             <input type='button' id='mute' value='&#x1f56A;' class='symbol'>
         </div>
         <label for='tempo'>Tempo:</label>
@@ -83,13 +89,17 @@
                 <input type='text' id='transcriber'>
             </div>
             <div id='text-controls'>
-                <!-- <span id='file-container'> -->
-                    <label for='upload' id='upload-label' class='button' style='text-decoration:underline'>&#x2b06;</label>
-                    <input type='file' id='upload'>
-                <!-- </span> -->
+                <label for='upload' id='upload-label' class='button' style='text-decoration:underline'>&#x2b06;</label>
+                <input type='file' id='upload'>
                 <input type='button' id='download' value='&#x2b07;' style='text-decoration:underline'>
-                <input type='button' id='text=to-gui' value='abc&#x27a1;&#x25a2;'>
-                <input type='button' id='gui-to-text' value='&#x25a2;&#x27a1;abc'>
+                <span id='text-to-gui' class='button'>
+                    <span class='button-mono'>
+                        Cm7</span><span class='button-symbol'>
+                        &#x27a1;</span><span class='round-rect'>Cm7</span></span>
+                <span id='gui-to-text' class='button'>
+                        <span class='round-rect'>Cm7</span><span class='button-symbol'>
+                        &#x27a1;</span><span class='button-mono'>
+                                Cm7</span></span>
             </div>
             <textarea id='text-editor' value='CM7 Cm7 Cdim7'></textarea>
         </span>
