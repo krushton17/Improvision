@@ -6,6 +6,7 @@
     --mono-font: 20px 'Cutive Mono', Courier, monospace;
 
     --border-radius: 5px;
+    --grid-gap: .5rem;
 
     --input-bg-color: lightgray;
     --input-text-color: black;
@@ -18,92 +19,76 @@
     --text-input-bg-color: rgb(44, 36, 36);
     --text-input-text-color: lightcyan;
 
-    --tab-content-bg-color: white;
-    --tab-content-border: 2px solid black;
-    --GUI-text-color: black;
+    --section-bg-color: white;
+    --section-border: 2px solid black;
+    --gui-text-color: black;
 
 }
-
+html {
+    height: 100vh;
+    width: 100vw;
+}
 body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
-    white-space: nowrap;
-    overflow-x: hidden;
+
+    /* really weird behavior here... */
+    height: 100vh;
+    margin: 0;
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: 1fr min-content;
+    grid-template-rows: max-content 1fr;
+    grid-template-areas: 
+        'diagram dashboard'
+        'gui text-box';
+    grid-gap: var(--grid-gap);
 }
-/*inputs-----------------------------------------------*/
-input, textarea {
-    -webkit-appearance: none;
-    cursor: pointer;
-    border: var(--input-border);
-    border-radius: var(--border-radius);
-    text-align: center;
-    padding: 5px;
-    margin: 5px;
-    font: inherit;
-    background-color: var(--input-bg-color);
-    color: var(--input-text-color);
+@media (max-width:960px) {
+    body {
+        /* grid-template-columns: 1fr min-content; 
+        grid-template-rows: max-content 1fr;          */
+        grid-template-areas: 
+            'diagram diagram'
+            'gui dashboard';
+    }
+    #text-wrapper {
+        display:none !important;
+    }
 }
-input[type=checkbox] {
+/* inline text using unicode symbols */
+.symbol {
+    font-size:2.5em;
     vertical-align: middle;
-    height: 32px;
-    width: 32px;
-}
-input[type=checkbox]:hover, input[type=button]:hover {
-    background-color: var(--input-hover-color);
-    cursor: pointer;
-}
-input[type=checkbox]:active input[type=button].active {
-    /*why doesn't this override the hover color?*/
-    background-color: var(--input-active-color) !important;
-}
-input[type=checkbox]:checked {
-    background-color: var(--input-active-color);
-}
-textarea, input[type=text], input[type=number] {
-    cursor: text;
-    background-color: var(--text-input-bg-color);
-    font: var(--mono-font);
-    color: var(--text-input-text-color);
-}
-textarea {
-    height: 85%;
-    width: 400;
-    resize: none;
-    display: block;
-    text-align: left;
-    margin-top: 16px;
-}
-#file-load {
-    display: block;
-}
-#tempo {
-    width: 50px;
-}
-#timeMarquis {
-    width: 250px;
-}
-#timeSig {
-    width: 50px;
 }
 
 /*diagram-----------------------------------------------*/
-.diagram {
-    margin-left: 10px;
-    display: inline-block;
+#diagram {
+    /* margin: 10px; */
+    /* padding-bottom: 10px; */
     overflow: hidden;
-    vertical-align: top;
+    background-color: black;
+    
+    grid-area: diagram;
+    
+    display: flex;
+    flex-flow: row nowrap;
+}
+#head-container {
+    flex: none;
+}
+#fret-container {
+    cursor: move;
+    overflow-x: scroll;
+    overflow-y: hidden;
+
+    flex: 1 1 0;
 }
 .fret {
     stroke: gray;
     stroke-width: 4px;
-}
-.fretContainer {
-    display: inline-block;
-}
-.headContainer {
-    display: inline-block;
-    vertical-align: top;
 }
 .marker {
     fill: var(--text-input-bg-color);
@@ -111,10 +96,9 @@ textarea {
 .marker12 {
     fill: rgb(66, 54, 54);
 }
-.note {
+.note-circle {
     fill: var(--text-input-bg-color);
     stroke-width: 2px;
-    r: 16; /*do I want to define this here, or programmatically for animations?*/
 }
 .head {
     stroke: gray;
@@ -134,148 +118,269 @@ textarea {
 .strings {
     stroke: lightgray;
 }
-.text {
+.note-text {
     fill: var(--main-text-color);
     font: var(--main-font);
     text-anchor: middle;
     stroke: none;
 }
 
-/*GUI editor-----------------------------------------------*/
-.GUI-wrapper {
-    color: var(--GUI-text-color);
+/*inputs-------------------------------------------*/
+input, textarea, .button {
+    -webkit-appearance: none;
+
+    box-sizing: border-box;
+
+    /* centers it */
+    margin: auto;
+
+    height: 1.6rem;
+    /* no bigger than it needs to be, but at least 2rem */
+    min-width: 2rem;
+
+    /* max-width: min-content; */
+
+    background-color: var(--input-bg-color);
+    
     border: var(--input-border);
-    padding: 10px;
-    margin: 10px;
     border-radius: var(--border-radius);
-    /*overflow-y: scroll;*/
-    height: 400px;
-    display: inline-block;
-    background-color: white;
-    overflow: scroll;
+
+    color: var(--input-text-color);
+    text-align: center;
+    vertical-align: middle;
 }
-#menu-wrapper {
-    width: 100;
+input[type=button], .button {
+    font-size:1.3rem;
+}
+input[type=button].symbol, .button.symbol {
+    padding: 0 .25rem .15rem .25rem;
+}
+input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
+    background-color: var(--input-hover-color);
+    cursor: pointer;
+}
+input[type=button].active, input[type=checkbox]:checked {
+    background-color: var(--input-active-color) !important;
+}
+textarea, input[type=text], input[type=number] {
+    cursor: text;
+
+    background-color: var(--text-input-bg-color);
+
+    font: var(--mono-font);
+    color: var(--text-input-text-color);
+}
+/* for Firefox */
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+.button > span {
+    display: inline-block;
+}
+.button-mono {
+    font: var(--mono-font);
+    font-size: 1.25rem;
+    margin-top: .1rem;
+    vertical-align: top;
+}
+.button-symbol {
+}
+.button-high {
+    margin-top: -.1rem;
+    vertical-align: top;
+}
+.round-rect {
+    border: 1.5px solid var(--input-text-color);
+    border-radius: var(--border-radius);
+
+    height: 1rem;
+
+    padding-top: .1rem;
+    font-size: .75rem;
+    
+    margin-top: .15rem;
+    vertical-align: top;
+}
+
+/* song mode playback dashboard-------------------------- */
+#playback-dash {
+    grid-area: dashboard;
+
+    display: grid;
+    grid-template-areas: 
+        'buttons buttons'
+        '. tempo'
+        '. meter'
+        '. swing'
+        '. count-in'
+        'counter counter';
+    justify-content: center;
+    grid-gap: var(--grid-gap);
+}
+#playback-dash > label {
+    margin: auto 0;
+
+    text-align: right;
+}
+/* @media (max-width:960px) {
+    #song-metadata { display: none; }
+} */
+#playback-buttons {
+    grid-area: buttons;
+    margin: 0 auto;
+}
+#tempo, #meter, #count-in {
+    width: 6ch;
+}
+#counter {
+    grid-area: counter;
+    /* set for max counter width (4/4:16chars) */
+    width: 18ch;
+
+    font-size: .85em;
+}
+
+/*song editor-----------------------------------------------*/
+/* chord menu---------------------------------------------- */
+#gui-wrapper {
+    grid-area: gui;
+
+    min-height: 0;
+
+    display: flex;
+    flex-flow: row nowrap;
+} 
+/* chord menu, etc. */
+#chord-menu-wrapper {
+    overflow: hidden;
+    flex: none;
+   /* ideal width for chord draggables, inc. margin/padding */
+    width: 10ch;
+
+    text-align: center;
+
+    display: inline-flex;
+    flex-flow: column nowrap;
+}
+#chord-menu-wrapper > * {
+    background-color: white;
+    color: black;
 }
 #chord-menu {
-    margin: 0;
-    padding: 0;
+    /* wider than its container to hide scrollbar */
+    width: 20ch;
+    overflow-y: scroll;
+    overflow-x: hidden;
+
+    flex: 1 1 auto;
 }
-#tab-wrapper {
-    width: 800;
+#chord-menu > * {
+    /* override other drag-drop settings */
+    display: block !important;
+    /* ideal width for chord draggables */
+    width: 6ch !important;
 }
-#text-wrapper {
-    overflow: hidden;
+#trash, #spacer-menu {
+    flex: 0 0 auto;
 }
-#text-wrapper > * {
-    display: block;
-}
-#file-container {
-    cursor: pointer;
-    position: relative;
-    border: var(--input-border);
-    border-radius: var(--border-radius);
-    text-align: center;
-    padding: 5px;
-    margin: 5px;
-    width: 150px;
-    font: inherit;
-    background-color: var(--input-bg-color);
-    color: var(--input-text-color);
-}
-#file-container:hover {
-    background-color: var(--input-hover-color);
-}
-#file-container [type=file] {
-    cursor: inherit;
-    display: block;
-    min-height: 100%;
-    min-width: 100%;
-    opacity: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-.drag-zone {
-    margin: 8 20;
-    padding: 8 0;
-}
-/*GUI song meta-data*/
-#section-order, #repeat-order {
-    width: 100;
-}
-/*GUI tabs*/
-.tab, tab > * {
+#spacer-menu > * {
     display: inline-block;
     vertical-align: middle;
 }
-.tab > input[type=button] {
-    /*background-color: inherit;*/
-    border: var(--tab-content-border);
-    cursor: pointer;
-    padding: 10px;
-    margin: 5px;
-    border-radius: var(--border-radius);
-    transition: 0.3s;
-    font: inherit;
-}
-.tab-content {
-    border: var(--tab-content-border);
-    background-color: var(--tab-content-bg-color);
-    border-radius: var(--border-radius);
-    display: none;
-    margin: 10 0;
-}
-/*GUI drag zones and child elements*/
-.drag-zone > * {
-    display: inline-block;
-}
-.drag-zone > div:hover {
-    background-color: var(--input-hover-color);
-}
-#chord-menu > * {
-    display: block !important;
-}
 #trash {
-    width: 100;
-    height: 100;
-    margin: 0;
-    padding: 0;
+    height: 50;
 }
 #trash > * {
+    /* prevents chords from appearing here before being deleted */
     display: none;
 }
-#symbol-menu {
-    margin: 0;
-    padding: 0;
+
+/* section menu ---------------------------------------*/
+#section-menu {
+    flex: 1 1 auto;
+
+    display: inline-grid;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+        '. . . . .'
+        'key sections pattern repeat-pattern repeat'
+        'content content content content content';
+    grid-gap: var(--grid-gap);
+}
+#section-menu > label {
+    text-align: center;
+}
+#key {
+    grid-area: key;
+    width: 4ch;
+}
+#section-select {
+    grid-area: sections;
+
+    display: flex;
+    flex-flow: row nowrap;
+}
+#pattern {
+    grid-area: pattern;
+}
+#repeat-pattern {
+    grid-area: repeat-pattern;
+}
+#pattern, #repeat-pattern {
+    width: 12ch;
+}
+#repeat-toggle {
+    grid-area: repeat;
+}
+#section-wrapper {
+    overflow: scroll;
+    background-color: var(--section-bg-color);
+
+    grid-area: content;
+}
+.section {
+    display: none;
+}
+/*gui drag zones and child elements*/
+.gui-line {
+    /* this widens the whole section wrapper, but without it the line wraps instead of scrolling sideways */
+    /* width: max-content; */
+}
+.gui-line > * {
+    display: inline-block;
+    vertical-align: middle;
 }
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
+    margin: .5em;
+}
+.drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
+    background-color: var(--input-hover-color);
 }
 .drag-chord {
-    background-color: lightgray;
-    font: var(--main-text-color);
-    color: black;
-    border: 1.5px solid black;
-    padding: 10px;
+    background-color: var(--input-bg-color);
+    color: var(--input-text-color);
+
+    border: 2px solid black;
     border-radius: var(--border-radius);
-    margin: 5px;
-    text-align: center;
+
+    padding: .4em .35em .3em .35em;
 }
 .spacer-bar, .spacer-dot {
     background-color: black;
-    margin: 5px;
     border-radius: var(--border-radius);
-    display: inline-block;
-    vertical-align: middle;
 }
 .spacer-bar {
-    width: 10px;
-    height: 40px;
+    width: 1em;
+    height: 3em;
 }
 .spacer-dot {
-    width: 20px;
-    height: 20px;
+    width: 1.5em;
+    height: 1.5em;
 }
 .sort-select, .sort-drag {
     background-color: var(--input-active-color);
@@ -284,25 +389,45 @@ textarea {
     background-color: lightgray;
     opacity: .4;
 }
-.current-chord-GUI {
+.current-chord-gui {
     border-color: red;
 }
 
+/* text editor ---------------------------------*/
+#text-wrapper {
+    grid-area: text-box;
 
+    display: flex;
+    flex-flow: column nowrap;
+}
+#song-metadata {
+    flex: 0 0 auto;
 
-table {
-    color: black;
-    position: absolute;
-    text-align: center;
+    display: grid;
+    grid-template-areas: 
+        '. .'
+        '. .'
+        '. .';
+    grid-gap: var(--grid-gap);
 }
-td {
-    color: inherit;
-    padding: 0 20;
+#song-metadata > label {
+    margin: auto 0;
+    text-align: right;
 }
-td > * {
-    display: inline;
-}
-#special {
-    padding: 0;
+#song-metadata > input {
     margin: 0;
+}
+#text-controls {
+    display: flex;
+    flex-flow: row nowrap;
+}
+#upload {
+    display: none;
+}
+#text-editor {
+    flex: 1 1 auto;
+    min-width: 30ch;
+
+    resize: none;
+    text-align: left;
 }
