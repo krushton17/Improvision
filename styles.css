@@ -129,12 +129,16 @@ body {
 input, textarea, .button {
     -webkit-appearance: none;
 
+    box-sizing: border-box;
+
     /* centers it */
     margin: auto;
-    height: 2rem;
+
+    height: 1.6rem;
     /* no bigger than it needs to be, but at least 2rem */
     min-width: 2rem;
-    max-width: min-content;
+
+    /* max-width: min-content; */
 
     background-color: var(--input-bg-color);
     
@@ -143,12 +147,13 @@ input, textarea, .button {
 
     color: var(--input-text-color);
     text-align: center;
+    vertical-align: middle;
 }
 input[type=button], .button {
-    font-size:1.5rem;
+    font-size:1.3rem;
 }
 input[type=button].symbol, .button.symbol {
-    padding: 0 .25em .15em .25em;
+    padding: 0 .25rem .15rem .25rem;
 }
 input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
     background-color: var(--input-hover-color);
@@ -172,6 +177,33 @@ input[type='number'] {
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
+}
+.button > span {
+    display: inline-block;
+}
+.button-mono {
+    font: var(--mono-font);
+    font-size: 1.25rem;
+    margin-top: .1rem;
+    vertical-align: top;
+}
+.button-symbol {
+}
+.button-high {
+    margin-top: -.1rem;
+    vertical-align: top;
+}
+.round-rect {
+    border: 1.5px solid var(--input-text-color);
+    border-radius: var(--border-radius);
+
+    height: 1rem;
+
+    padding-top: .1rem;
+    font-size: .75rem;
+    
+    margin-top: .15rem;
+    vertical-align: top;
 }
 
 /* song mode playback dashboard-------------------------- */
@@ -386,7 +418,8 @@ input[type=number]::-webkit-outer-spin-button {
     margin: 0;
 }
 #text-controls {
-    margin: auto;
+    display: flex;
+    flex-flow: row nowrap;
 }
 #upload {
     display: none;

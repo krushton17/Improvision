@@ -701,6 +701,10 @@ let timer = {
         //I don't currently use this, but it may be useful
         //  for when I add MIDI accompaniment
         let currentChord = song.chordLibrary[sequence[beat]];
+        //supposed to play the chord
+        if (currentChord) {
+            audio.play(currentChord);
+        }
         
         //look for the next chord to start the fade-in
         let nextIndex = this.findNextChord(sequence, beat);
@@ -813,17 +817,20 @@ let timer = {
         //if this is the first downbeat of a measure
         if (count == 0 || this.counter == this.countIn) {
             marquis = '1';
-            new Kick(audio.now, 500);
+            new Snare(audio.now);
+            //new Kick(audio.now, 150);
             //clear the marquis
             document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
-            new Kick(audio.now, 300);
+            new Snare(audio.now);
+            //new Kick(audio.now, 150);
         //if this is any other downbeat
         } else if (subCount == 0) {
             marquis = (count/this.countsPerBeat+1);
-            new Kick(audio.now, 300);
+            new Snare(audio.now);
+            //new Kick(audio.now, 150);
         //if this is an upbeat (e.g. an 8th note in common time)
         } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
             marquis = '&';
@@ -849,6 +856,7 @@ let timer = {
             this.beat = setInterval(this.repeat.bind(this), this.tempoMil);
         } else {
             this.paused = true;
+            audio.stop();
             playBtn.value = '\u{25B6}';
             //this doesn't stop animations that have already started...
             clearInterval(this.beat);
@@ -1153,34 +1161,81 @@ function GUItoText() {
 // WEB AUDIO API-----------------------------------------
 let audio = {
     context: undefined,
-    oscillator: undefined,
-    gain: undefined,
-
+    bass: undefined,
+    treble: [],
+    gain: {
+        drums: undefined,
+        bass: undefined,
+        treble: undefined,
+        master: undefined,
+    },
+    gainDefaults: {
+        drums: 1,
+        bass: .25,
+        treble: .15,
+        master: .35,
+    },
     get now() {
         return this.context.currentTime;
     },
 
     setup: function() {
-        //!apparently web audio's timekeeper is more accurate than the default js one, so maybe use that for the timer as well
-        //!!might not work in FireFox; needs to be 'prefixed'
         this.context = new AudioContext();
-        this.gain = this.context.createGain();
-        this.oscillator = this.context.createOscillator();
-        this.frequency(0,3);
-        this.gain.connect(this.context.destination);
-        //set volume with this.gain.gain.value; 1=default; can go up or down from there, but 1 is supposed to be the max
-        //oscillator is routed through the gain modulator node
-        //to play multiple notes at a time, just connect multiple oscillators (or their gain modulators) to the context destination (or a master gain modulator))--think flowchart; serial connections between audio nodes
-        this.oscillator.connect(this.gain);
-        //this.oscillator.start();
-        //this.context.suspend();
+        this.gain.master = this.context.createGain();
+
+        for (let key in this.gain) {
+            if (key=='master') {
+                this.gain[key].connect(this.context.destination);
+            } else {
+                this.gain[key] = this.context.createGain();
+                this.gain[key].connect(this.gain.master);
+            }
+            this.gain[key].gain.value = this.gainDefaults[key];
+        }
     },
 
-    play: function() {
-        this.context.resume()
+    play: function(chord) {
+        //stop all previous notes
+        this.stop();
+        this.treble = [];
+        let root = encodeNote(chord.root);
+        console.log(root);
+        //assign root to bass
+        this.bass = this.context.createOscillator();
+        this.bass.frequency.value = this.frequency(root, 2);
+        this.bass.type = 'sawtooth';
+        this.bass.connect(this.gain.bass);
+        this.bass.start();
+        //convert chord intervals into absolute notes
+        let treble = [];
+        for (let i of chord.guides) {
+            console.log(i)
+            treble.push((encodeInterval(i) + root)%12);
+        }
+        for (let i of chord.auxExp) {
+            console.log(i)
+            treble.push((encodeInterval(i) + root)%12);
+        }
+        console.log(treble);
+        //create array of oscillators to play treble
+        //connect all new oscillators to respective gains
+        //start oscillators
+        for (let i = 0; i < treble.length; i++) {
+            this.treble.push(this.context.createOscillator())
+            this.treble[i].frequency.value = this.frequency(treble[i], 3);
+            this.treble[i].type = 'sawtooth';
+            this.treble[i].connect(this.gain.treble);
+            this.treble[i].start();
+        }
     },
-    pause: function() {
-        this.context.suspend();
+
+    stop: function() {
+        if (this.bass) {
+            this.bass.stop();
+            for (let i of this.treble) {
+                i.stop();
+            }
+        }
     },
 
     //!!not sure if "octave" is the best way to call this; clamp chord-tones to a 2-octave range, bass tones to a 1-octave range. I guess this is still probably the most readable way to do it though
@@ -1188,10 +1243,10 @@ let audio = {
         //since my scale starts at A, but standard octave numbering starts at C
         if (note&12 > 2) { octave-=1; }
         //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
-        //f = Math.pow(2,(m-69)/12*440)
-        freq = Math.pow(2,note/12+octave-4)*440
+        //  f = Math.pow(2,(m-69)/12*440)
+        return Math.pow(2,note/12+octave-4)*440
         //this.oscillator.frequency.setTargetAtTime(freq, this.context.currentTime, 0);
-        this.oscillator.frequency.value = freq;
+        //this.bass.frequency.value = freq;
     }
 }
 audio.setup();
@@ -1205,17 +1260,17 @@ class Kick {
         this.gain.connect(audio.context.destination);
     }
 
-    constructor(time, freq) {
+    constructor() {
         this.setup();
 
-        this.osc.frequency.setValueAtTime(freq,time);
-        this.osc.frequency.exponentialRampToValueAtTime(0.001, time + 0.1);
+        this.osc.frequency.setValueAtTime(150,audio.now);
+        this.osc.frequency.exponentialRampToValueAtTime(0.001, audio.now + 0.1);
     
-        this.gain.gain.setValueAtTime(1, time);
-        this.gain.gain.exponentialRampToValueAtTime(0.001, time + .5);
+        this.gain.gain.setValueAtTime(1, audio.now);
+        this.gain.gain.exponentialRampToValueAtTime(0.001, audio.now + .5);
 
-        this.osc.start(time);
-        this.osc.stop(time + .5);
+        this.osc.start(audio.now);
+        this.osc.stop(audio.now + .5);
     }
 }
 
