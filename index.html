@@ -21,29 +21,6 @@
         </span>
     </span>
     <!-- song mode -->
-    <!-- playback dashboard -->
-    <span id='playback-dash'>
-        <div id='playback-buttons'>
-            <input type='button' id='play/pause' value='&#9654;' class='symbol'>
-            <input type='button' id='stop' value='&#9724;' class='symbol'>
-            &#x1d11e;
-            &#x1d122;
-            &#x1f941;
-            &#x1f568;
-            &#x1f569;
-            &flat;&sharp;&natural;&deg;&#x1d1a9;
-            <input type='button' id='mute' value='&#x1f56A;' class='symbol'>
-        </div>
-        <label for='tempo'>Tempo:</label>
-            <input type='number' id='tempo' value='60'>
-        <label for='meter'>Meter:</label>
-        <input type='text' id='meter' value='4/4'>
-        <label for='swing-toggle'>Swing:</label>
-        <input type='checkbox' id='swing-toggle'>
-        <label for='count-in'>Count-in:</label>
-        <input type='number' id='count-in' value='4'>
-        <input type='text' id='counter' readonly>
-    </span>
     <!-- song editor gui -->
         <span id='gui-wrapper' class='active-editor'>
             <span id='chord-menu-wrapper'>
@@ -54,6 +31,8 @@
                     <span class='spacer-bar'></span>
                 </div>
                 <img src='icons/trash.svg' id='trash' class='symbol'>
+                <!-- extra space below trash icon -->
+                <div></div>
             </span>
             <!-- section menu -->
             <!-- <span id='section-wrapper'> -->
@@ -68,8 +47,6 @@
                     <input type='text' id='pattern'>     
                     <label for='repeat-pattern'>Repeat Pattern:</label>
                     <input type='text' id='repeat-pattern'>
-                    <label for='repeat-toggle'>Repeat:</label>
-                    <input type='checkbox' id='repeat-toggle'>
                     <div id='section-wrapper'></div>
                 </div>
             <!-- </span> -->
@@ -80,13 +57,33 @@
         </span> -->
         <!-- song text editor -->
         <span id='text-wrapper' class='active-editor'>
+            <!-- playback dashboard -->
+            <div id='playback-dash'>
+                <div id='playback-buttons'>
+                    <input type='button' id='play/pause' value='&#9654;' class='symbol'>
+                    <input type='button' id='stop' value='&#9724;' class='symbol'>
+                    <input type='button' id='mute' value='&#x1f56A;' class='symbol'>
+                    <!-- <label for='repeat-toggle'>Repeat:</label> -->
+                    <input type='button' id='repeat-toggle' value='&#x1d106; &#x1d107;'>
+                </div>
+                <label for='tempo'>Tempo:</label>
+                <input type='number' id='tempo' value='120'>
+                <label for='meter'>Meter:</label>
+                <input type='text' id='meter' value='4/4'>
+                <!-- <label for='swing-toggle'>Swing:</label>
+                <input type='checkbox' id='swing-toggle'> -->
+                <!-- <label for='count-in'>Count-in:</label> -->
+                <!-- <input type='number' id='count-in' value='4'> -->
+                <!-- <input type='text' id='counter' readonly> -->
+                <!-- <input type='range' id='volume-master'> -->
+            </div>
             <div id='song-metadata'>
                 <label for='title'>Song Title:</label>
                 <input type='text' id='title'>
                 <label for='writer'>Written By:</label>
                 <input type='text' id='writer'>
-                <label for='transcriber'>Transcribed By:</label>
-                <input type='text' id='transcriber'>
+                <!-- <label for='transcriber'>Transcribed By:</label>
+                <input type='text' id='transcriber'> -->
             </div>
             <div id='text-controls'>
                 <label for='upload' id='upload-label' class='button' style='text-decoration:underline'>&#x2b06;</label>

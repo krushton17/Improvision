@@ -663,7 +663,8 @@ let timer = {
     //!!will need to set the countIn relative to
     //  the beginning of the current measure for pause
     reset: function() {
-        this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
+        this.countIn = -4 * this.countsPerBeat
+        // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
         this.counter = this.countIn;
         this.sectionIndex = 0;
         this.lineIndex = 0;
@@ -819,7 +820,7 @@ let timer = {
             marquis = '1';
             audio.percussion(false, false, false, true, true);
             //clear the marquis
-            document.getElementById('counter').value = '';
+            //document.getElementById('counter').value = '';
         //if this is a downbeat in the count-in
         } else if (this.counter < 0 && Math.abs(subCount) == 0) {
             marquis = 1 - (this.countIn/this.countsPerBeat + Math.abs(count)/this.countsPerBeat);
@@ -837,7 +838,7 @@ let timer = {
         }
 
         //append the text to the marquis textbox
-        document.getElementById('counter').value += marquis;
+        //document.getElementById('counter').value += marquis;
     },//end of marquis function
 
     paused: true,
@@ -1156,6 +1157,7 @@ function GUItoText() {
 
 
 // WEB AUDIO API-----------------------------------------
+//!!oscillator generation functions could certainly be more DRY... create a recyclable function for that, maybe using a closure to remember the previous oscillators created with it?
 let audio = {
     context: undefined,
     bass: undefined,
@@ -1196,7 +1198,7 @@ let audio = {
     //play notes (does not play percussion)
     play: function(chord) {
         //stop all previous notes
-        this.stop();
+        this.stop.call(this);
         this.treble = [];
         let root = encodeNote(chord.root);
         console.log(root);
@@ -1207,31 +1209,27 @@ let audio = {
         this.bass.connect(this.gain.bass);
         this.bass.start();
         //convert chord intervals into absolute notes
-        let treble = [];
-        for (let i of chord.guides) {
-            console.log(i)
-            treble.push((encodeInterval(i) + root)%12);
-        }
-        for (let i of chord.auxExp) {
-            console.log(i)
-            treble.push((encodeInterval(i) + root)%12);
-        }
-        console.log(treble);
-        //create array of oscillators to play treble
-        //connect all new oscillators to respective gains
-        //start oscillators
-        for (let i = 0; i < treble.length; i++) {
-            this.treble.push(this.context.createOscillator())
-            this.treble[i].frequency.value = this.frequency(treble[i], 3);
-            this.treble[i].type = 'sawtooth';
-            this.treble[i].connect(this.gain.treble);
-            this.treble[i].start();
-        }
+        let treble = chord.guides.concat(chord.auxExp).map(function(el) {
+            return (encodeInterval(el) + root)%12;
+        });
+        // create array of oscillators to play treble
+        // connect all new oscillators to respective gains
+        // start oscillators
+        this.treble = treble.map(function(el) {
+            let osc = audio.context.createOscillator();
+            osc.frequency.value = audio.frequency(el, 3);
+            // osc.type = 'sawtooth';
+            osc.connect(audio.gain.treble);
+            osc.start();
+            return osc;
+        });
     },
 
     //stop all notes (doesn't work on percussion)
     stop: function() {
+        console.log(this);
         if (this.bass) {
+            console.log(this);
             this.bass.stop();
             for (let i of this.treble) {
                 i.stop();
@@ -1242,7 +1240,7 @@ let audio = {
     //obtain frequency in Hz from encoded (numbered) note
     frequency: function(note, octave) {
         //since my scale starts at A, but standard octave numbering starts at C
-        if (note&12 > 2) { octave-=1; }
+        if (note%12 > 2) { octave-=1; }
         //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
         //  f = Math.pow(2,(m-69)/12*440)
         return Math.pow(2,note/12+octave-4)*440;
@@ -1318,8 +1316,6 @@ let audio = {
                 osc.connect(bandpass);
             } else {
                 osc.type = metronome ? 'sawtooth' : 'triangle';
-                //if (!metronome) {
-                //    osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff);}
                 osc.frequency.exponentialRampToValueAtTime(0.0001, dropoff)
 
                 osc.connect(envelope);

@@ -8,56 +8,59 @@
     --border-radius: 5px;
     --grid-gap: .5rem;
 
-    --input-bg-color: lightgray;
-    --input-text-color: black;
-    --input-border: 1.5px solid lightgray;
+    --input-bg-color: hsl(280, 61%, 35%);
+    --input-text-color: white;
+    --input-border: 1.5px solid turquoise;
     --input-hover-color: hotpink;
-    --input-active-color: lightcyan;
+    --input-active-color: turquoise;
     --hover-bg-color: gray;
     --hover-text-color: black;
 
-    --text-input-bg-color: rgb(44, 36, 36);
-    --text-input-text-color: lightcyan;
+    --textbox-bg-color: rgb(44, 36, 36);
+    --textbox-text-color: lightcyan;
 
-    --section-bg-color: white;
+    --range-thumb-height: 1rem;
+    --range-thumb-width: .5rem;
+
+    --section-bg-color: hsl(280, 30%, 15%);
     --section-border: 2px solid black;
     --gui-text-color: black;
 
 }
 html {
-    height: 100vh;
-    width: 100vw;
+    /* height: 100vh;
+    width: 100vw; */
 }
 body {
     font: var(--main-font);
     color: var(--main-text-color);
     background-color: var(--main-bg-color);
 
-    /* really weird behavior here... */
-    height: 100vh;
-    margin: 0;
+    height: calc(100vh - var(--grid-gap) * 2);
+    /* seems to be unnecessary */
+    /* width: calc(100vw - var(--grid-gap) * 2); */
+    margin: var(--grid-gap);
     box-sizing: border-box;
 
     display: grid;
-    grid-template-columns: 1fr min-content;
-    grid-template-rows: max-content 1fr;
+    grid-template-columns: auto 1fr;
     grid-template-areas: 
-        'diagram dashboard'
-        'gui text-box';
+        'diagram diagram'
+        'text-box gui';
     grid-gap: var(--grid-gap);
 }
-@media (max-width:960px) {
-    body {
+/* @media (max-width:960px) {
+    body { */
         /* grid-template-columns: 1fr min-content; 
         grid-template-rows: max-content 1fr;          */
-        grid-template-areas: 
+        /* grid-template-areas: 
             'diagram diagram'
             'gui dashboard';
     }
     #text-wrapper {
         display:none !important;
     }
-}
+} */
 /* inline text using unicode symbols */
 .symbol {
     font-size:2.5em;
@@ -91,13 +94,13 @@ body {
     stroke-width: 4px;
 }
 .marker {
-    fill: var(--text-input-bg-color);
+    fill: var(--textbox-bg-color);
 }
 .marker12 {
     fill: rgb(66, 54, 54);
 }
 .note-circle {
-    fill: var(--text-input-bg-color);
+    fill: var(--textbox-bg-color);
     stroke-width: 2px;
 }
 .head {
@@ -165,10 +168,10 @@ input[type=button].active, input[type=checkbox]:checked {
 textarea, input[type=text], input[type=number] {
     cursor: text;
 
-    background-color: var(--text-input-bg-color);
+    background-color: var(--textbox-bg-color);
 
     font: var(--mono-font);
-    color: var(--text-input-text-color);
+    color: var(--textbox-text-color);
 }
 /* for Firefox */
 input[type='number'] {
@@ -206,44 +209,6 @@ input[type=number]::-webkit-outer-spin-button {
     vertical-align: top;
 }
 
-/* song mode playback dashboard-------------------------- */
-#playback-dash {
-    grid-area: dashboard;
-
-    display: grid;
-    grid-template-areas: 
-        'buttons buttons'
-        '. tempo'
-        '. meter'
-        '. swing'
-        '. count-in'
-        'counter counter';
-    justify-content: center;
-    grid-gap: var(--grid-gap);
-}
-#playback-dash > label {
-    margin: auto 0;
-
-    text-align: right;
-}
-/* @media (max-width:960px) {
-    #song-metadata { display: none; }
-} */
-#playback-buttons {
-    grid-area: buttons;
-    margin: 0 auto;
-}
-#tempo, #meter, #count-in {
-    width: 6ch;
-}
-#counter {
-    grid-area: counter;
-    /* set for max counter width (4/4:16chars) */
-    width: 18ch;
-
-    font-size: .85em;
-}
-
 /*song editor-----------------------------------------------*/
 /* chord menu---------------------------------------------- */
 #gui-wrapper {
@@ -251,41 +216,37 @@ input[type=number]::-webkit-outer-spin-button {
 
     min-height: 0;
 
-    display: flex;
-    flex-flow: row nowrap;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        '. chord-menu';
+    grid-gap: var(--grid-gap);
 } 
 /* chord menu, etc. */
 #chord-menu-wrapper {
     overflow: hidden;
-    flex: none;
-   /* ideal width for chord draggables, inc. margin/padding */
-    width: 10ch;
+    grid-area: chord-menu;
 
+    background: var(--section-bg-color);
     text-align: center;
+    /* color: black; */
 
-    display: inline-flex;
-    flex-flow: column nowrap;
-}
-#chord-menu-wrapper > * {
-    background-color: white;
-    color: black;
+    border: var(--input-border);
+    border-radius: var(--border-radius);
+
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    grid-gap: var(--grid-gap);
 }
 #chord-menu {
-    /* wider than its container to hide scrollbar */
-    width: 20ch;
     overflow-y: scroll;
-    overflow-x: hidden;
 
-    flex: 1 1 auto;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-gap: var(--grid-gap);
 }
 #chord-menu > * {
-    /* override other drag-drop settings */
-    display: block !important;
-    /* ideal width for chord draggables */
-    width: 6ch !important;
-}
-#trash, #spacer-menu {
-    flex: 0 0 auto;
+    margin: 0 auto;
 }
 #spacer-menu > * {
     display: inline-block;
@@ -293,6 +254,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 #trash {
     height: 50;
+    margin: auto;
 }
 #trash > * {
     /* prevents chords from appearing here before being deleted */
@@ -301,18 +263,18 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* section menu ---------------------------------------*/
 #section-menu {
-    flex: 1 1 auto;
+    overflow: hidden;
 
-    display: inline-grid;
+    text-align: center;
+
+    display: grid;
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
-        '. . . . .'
-        'key sections pattern repeat-pattern repeat'
-        'content content content content content';
+        '. . . .'
+        'key sections pattern repeat-pattern'
+        'content content content content';
     grid-gap: var(--grid-gap);
-}
-#section-menu > label {
-    text-align: center;
+    justify-content: stretch;
 }
 #key {
     grid-area: key;
@@ -338,7 +300,12 @@ input[type=number]::-webkit-outer-spin-button {
 }
 #section-wrapper {
     overflow: scroll;
+    /* min-width: 100%; */
+
     background-color: var(--section-bg-color);
+
+    border: var(--input-border);
+    border-radius: var(--border-radius);
 
     grid-area: content;
 }
@@ -347,8 +314,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 /*gui drag zones and child elements*/
 .gui-line {
-    /* this widens the whole section wrapper, but without it the line wraps instead of scrolling sideways */
-    /* width: max-content; */
+    width: max-content;
 }
 .gui-line > * {
     display: inline-block;
@@ -357,6 +323,9 @@ input[type=number]::-webkit-outer-spin-button {
 .drag-chord, .spacer-bar, .spacer-dot {
     cursor: move;
     margin: .5em;
+
+    border: var(--input-border);
+
 }
 .drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
     background-color: var(--input-hover-color);
@@ -365,7 +334,7 @@ input[type=number]::-webkit-outer-spin-button {
     background-color: var(--input-bg-color);
     color: var(--input-text-color);
 
-    border: 2px solid black;
+    border: var(--input-border);
     border-radius: var(--border-radius);
 
     padding: .4em .35em .3em .35em;
@@ -397,15 +366,58 @@ input[type=number]::-webkit-outer-spin-button {
 #text-wrapper {
     grid-area: text-box;
 
-    display: flex;
-    flex-flow: column nowrap;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+        '.'
+        '.'
+        '.'
+        '.';
+    grid-gap: var(--grid-gap);
 }
-#song-metadata {
-    flex: 0 0 auto;
+/* song mode playback dashboard */
+#playback-dash {
+    /* grid-area: dashboard; */
+    border: var(--input-border);
+    border-radius: var(--border-radius);
+    padding: var(--grid-gap);
 
     display: grid;
     grid-template-areas: 
-        '. .'
+        'buttons . .'
+        'buttons . .';
+    justify-content: center;
+    grid-gap: var(--grid-gap);
+}
+#playback-dash > label {
+    margin: auto 0;
+
+    text-align: right;
+}
+/* @media (max-width:960px) {
+    #song-metadata { display: none; }
+} */
+#playback-buttons {
+    grid-area: buttons;
+    margin: auto;
+}
+#tempo, #meter, #count-in {
+    width: 6ch;
+}
+#counter {
+    grid-area: counter;
+    /* set for max counter width (4/4:16chars) */
+    width: 18ch;
+
+    font-size: .85em;
+}
+/* metadata */
+#song-metadata {
+    /* flex: 0 0 auto; */
+
+    display: grid;
+    grid-template-areas: 
         '. .'
         '. .';
     grid-gap: var(--grid-gap);
@@ -418,16 +430,118 @@ input[type=number]::-webkit-outer-spin-button {
     margin: 0;
 }
 #text-controls {
-    display: flex;
-    flex-flow: row nowrap;
+    /* display: flex; */
+    /* flex-flow: row nowrap; */
+    display: grid;
+    grid-template-areas: 
+        '. . . .';
+    grid-gap: var(--grid-gap);
 }
 #upload {
     display: none;
 }
 #text-editor {
-    flex: 1 1 auto;
+    /* flex: 1 1 auto; */
     min-width: 30ch;
+    height: 100%;
 
     resize: none;
     text-align: left;
 }
+
+
+/* &#x1d11e;
+                    &#x1d122;
+                    &#x1f941;
+                    &#x1f568;
+                    &#x1f569;
+                    
+                    &flat;&sharp;&natural;&deg;&#x1d1a9;
+                    */
+
+
+/* obnoxious inputs------------------- */
+
+input[type=range] {
+    -webkit-appearance: none;
+    /* so the other input defaults don't affec this one */
+    background: none;
+    border: none;
+    margin: auto;
+  }
+  input[type=range]:focus {
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    cursor: pointer;
+    height: calc(var(--range-thumb-height) / 2);
+    background: var(--textbox-bg-color);
+    border-radius: var(--border-radius);
+    border: var(--input-border);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    cursor: pointer;
+    border: var(--input-border);
+    height: var(--range-thumb-height);
+    width: var(--range-thumb-width);
+    border-radius: var(--border-radius);
+    background: var(--input-bg-color);
+    /* I don't know why /3 is the magic formula here, but it works */
+    margin-top: calc(var(--range-thumb-height) / -3);
+  }
+  /* these have to stay separate from the chrome ones or they won't work */
+  input[type=range]::-moz-range-track {
+    cursor: pointer;
+    width: 100%;
+    height: 8.3px;
+    background: var(--textbox-bg-color);
+    border-radius: var(--border-radius);
+    border: var(--input-border);;
+  }
+  input[type=range]::-moz-range-thumb {
+    cursor: pointer;
+    border: var(--input-border);;
+    height: 23px;
+    width: 13px;
+    border-radius: var(--border-radius);
+    background: var(--input-bg-color);
+  }
+  /* nothing below here has been touched really */
+  input[type=range]::-ms-track {
+    width: 100%;
+    height: 8.3px;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+  }
+  input[type=range]::-ms-fill-lower {
+    background: #3071a9;
+    border: 1.5px solid #ec0101;
+    border-radius: 27.4px;
+    box-shadow: 0px 0px 0.3px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+  }
+  input[type=range]::-ms-fill-upper {
+    background: #3071a9;
+    border: 1.5px solid #ec0101;
+    border-radius: 27.4px;
+    box-shadow: 0px 0px 0.3px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+  }
+  input[type=range]::-ms-thumb {
+    box-shadow: 0px 0px 0px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+    border: 1.5px solid #00ff00;
+    height: 23px;
+    width: 13px;
+    border-radius: 5px;
+    background: #ff4400;
+    cursor: pointer;
+    height: 8.3px;
+  }
+  input[type=range]:focus::-ms-fill-lower {
+    background: #3071a9;
+  }
+  input[type=range]:focus::-ms-fill-upper {
+    background: #3071a9;
+  }
+  
