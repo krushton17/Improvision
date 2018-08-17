@@ -1,0 +1,611 @@
+// all deprecated, but still referenced in the cross-browser compatibility settings 
+:root {
+    --main-bg-color: black;
+
+    --main-text-color: white;
+    --main-font: 16px 'Varela Round', Helvetica, sans-serif;
+    --mono-font: 20px 'Cutive Mono', Courier, monospace;
+
+    --border-radius: 5px;
+    --grid-gap: .5rem;
+
+    --input-bg-color: hsl(280, 61%, 35%);
+    --input-text-color: white;
+    --input-border: 1.5px solid turquoise;
+    --input-hover-color: hotpink;
+    --input-active-color: turquoise;
+    --hover-bg-color: gray;
+    --hover-text-color: black;
+
+    --textbox-bg-color: rgb(44, 36, 36);
+    --textbox-text-color: lightcyan;
+
+    --range-thumb-height: 1rem;
+    --range-thumb-width: .5rem;
+
+    --section-bg-color: hsl(280, 30%, 15%);
+    --section-border: 2px solid black;
+    --gui-text-color: black;
+
+}
+
+
+
+// general-----------------------------------------------------------
+$main-bg-color: black;
+
+$main-text-color: white;
+$main-font: 16px 'Varela Round', Helvetica, sans-serif;
+$mono-font: 20px 'Cutive Mono', Courier, monospace;
+$inline-symbol-font-size: 1.5rem;
+
+$border: 1.5px solid turquoise;
+$border-radius: 5px;
+
+$grid-gap: .5rem;
+
+// diagram--------------------------------------------------------
+$fret-stroke-width: 4px;
+$fret-stroke-color: gray;
+$marker-fill: rgb(44, 36, 36);
+$marker-12-fill: rgb(66, 54, 54);
+$strings-stroke: lightgray;
+
+$note-fill: $marker-fill;
+$note-stroke-width: 2px;
+$head-stroke: gray;
+$root-stroke: lightseagreen;
+$guide-stroke: red;
+$auxExp-stroke: hotpink;
+$auxImp-stroke: darkorchid;
+
+// inputs-------------------------------------------------------
+$input-height: 1.6rem;
+$input-min-width: 2rem;
+
+$button-bg-color: hsl(280, 61%, 35%);
+$button-text-color: white;
+$button-text-size: 16px;
+$button-padding: .3rem .35rem;
+$button-hover-color: hotpink;
+$button-active-color: turquoise;
+
+$button-symbol-font-size: 1.25rem;
+$button-symbol-margin: -.4rem 0 0 0;
+
+$textbox-bg-color: rgb(44, 36, 36);
+$textbox-text-color: lightcyan;
+
+$range-thumb-height: 1rem;
+$range-thumb-width: .5rem;
+
+// gui-----------------------------------------------------------
+$editor-bg-color: hsl(280, 30%, 15%);
+$spacer-color: black;
+$drag-ghost-color: lightgray;
+$drag-ghost-alpha: .4;
+$current-chord-color: red;
+
+%grid {
+    display: grid;
+    grid-gap: $grid-gap;
+}
+%border {
+    border: $border;
+    border-radius: $border-radius;
+}
+
+html {
+    /* height: 100vh;
+    width: 100vw; */
+}
+body {
+    font: $main-font;
+    color: $main-text-color;
+    background-color: $main-bg-color;
+
+    //scss is compiled and can't use run-time variables; this bypasses that problem
+    height: unquote("calc(100vh - #{$grid-gap} * 2)");
+    //100vh - $grid-gap * 2;
+    /* seems to be unnecessary */
+    /* width: calc(100vw - var(--grid-gap) * 2); */
+    margin: $grid-gap;
+    box-sizing: border-box;
+
+    @extend %grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 
+        'diagram diagram'
+        'text-box gui';
+}
+/* @media (max-width:960px) {
+    body { */
+        /* grid-template-columns: 1fr min-content; 
+        grid-template-rows: max-content 1fr;          */
+        /* grid-template-areas: 
+            'diagram diagram'
+            'gui dashboard';
+    }
+    #text-wrapper {
+        display:none !important;
+    }
+} */
+/* inline text using unicode symbols */
+.inline-symbol {
+    font-size: $inline-symbol-font-size;
+    vertical-align: middle;
+}
+
+/*diagram-----------------------------------------------*/
+#diagram {
+    overflow: hidden;
+    // background-color: black;
+    
+    grid-area: diagram;
+    
+    display: flex;
+    flex-flow: row nowrap;
+
+    margin-bottom: 1rem;
+}
+#head-container {
+    flex: none;
+}
+#fret-container {
+    cursor: move;
+    overflow-x: scroll;
+    overflow-y: hidden;
+
+    flex: 1 1 0;
+}
+.fret {
+    stroke: $fret-stroke-color;
+    stroke-width: $fret-stroke-width;
+}
+.marker {
+    fill: $marker-fill;
+}
+.marker12 {
+    fill: $marker-12-fill;
+}
+.strings {
+    stroke: $strings-stroke;
+}
+
+.note-circle {
+    fill: $note-fill;
+    stroke-width: $note-stroke-width;
+}
+.note-text {
+    fill: $main-text-color;
+    font: $main-font;
+    text-anchor: middle;
+    stroke: none;
+}
+.head {
+    stroke: $head-stroke;
+}
+.root {
+    stroke: $root-stroke;
+}
+.guides {
+    stroke: $guide-stroke;
+}
+.auxExp {
+    stroke: $auxExp-stroke;
+}
+.auxImp {
+    stroke: $auxImp-stroke;
+}
+
+/*inputs-------------------------------------------*/
+input, textarea, .button {
+    -webkit-appearance: none;
+    display: inline-block;
+    vertical-align: middle;
+    margin: auto;
+
+    box-sizing: border-box;
+    height: $input-height;
+    min-width: $input-min-width;
+
+    background-color: $button-bg-color;
+    
+    @extend %border;
+
+    color: $button-text-color;
+    text-align: center;
+    font: inherit;
+    padding: $button-padding; 
+}
+input[type=button].symbol, .button >.symbol {
+    font-size: $button-symbol-font-size;
+    margin: $button-symbol-margin;
+}
+input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
+    background-color: $button-hover-color;
+    cursor: pointer;
+}
+input[type=button].active, input[type=checkbox]:checked {
+    background-color: $button-active-color;
+}
+textarea, input[type=text], input[type=number] {
+    cursor: text;
+
+    background-color: $textbox-bg-color;
+
+    font: $mono-font;
+    color: $textbox-text-color;
+}
+/* for Firefox */
+input[type='number'] {
+    -moz-appearance:textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+.button > span {
+    display: inline-block;
+}
+// these seem to specific to bother with variables...
+.button-mono {
+    font: $mono-font;
+    font-size: 1.25rem;
+    margin-top: -.25rem;
+    vertical-align: top;
+}
+.button-high {
+    margin-top: -.1rem;
+    vertical-align: top;
+}
+.round-rect {
+    @extend %border;
+
+    height: .9rem;
+
+    padding: .1rem .15rem .05rem;
+    font-size: .75rem;
+    
+    margin-top: -.18rem;
+    vertical-align: top;
+}
+/* range inputs------------------- */
+
+input[type=range] {
+    -webkit-appearance: none;
+    /* so the other input defaults don't affec this one */
+    background: none;
+    border: none;
+    margin: auto;
+  }
+  input[type=range]:focus {
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    cursor: pointer;
+    height: calc(var(--range-thumb-height) / 2);
+    background: var(--textbox-bg-color);
+    border-radius: var(--border-radius);
+    border: var(--input-border);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    cursor: pointer;
+    border: var(--input-border);
+    height: var(--range-thumb-height);
+    width: var(--range-thumb-width);
+    border-radius: var(--border-radius);
+    background: var(--input-bg-color);
+    /* I don't know why /3 is the magic formula here, but it works */
+    margin-top: calc(var(--range-thumb-height) / -3);
+  }
+  /* these have to stay separate from the chrome ones or they won't work */
+  input[type=range]::-moz-range-track {
+    cursor: pointer;
+    width: 100%;
+    height: 8.3px;
+    background: var(--textbox-bg-color);
+    border-radius: var(--border-radius);
+    border: var(--input-border);;
+  }
+  input[type=range]::-moz-range-thumb {
+    cursor: pointer;
+    border: var(--input-border);;
+    height: 23px;
+    width: 13px;
+    border-radius: var(--border-radius);
+    background: var(--input-bg-color);
+  }
+  /* nothing below here has been touched really */
+  input[type=range]::-ms-track {
+    width: 100%;
+    height: 8.3px;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+  }
+  input[type=range]::-ms-fill-lower {
+    background: #3071a9;
+    border: 1.5px solid #ec0101;
+    border-radius: 27.4px;
+    box-shadow: 0px 0px 0.3px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+  }
+  input[type=range]::-ms-fill-upper {
+    background: #3071a9;
+    border: 1.5px solid #ec0101;
+    border-radius: 27.4px;
+    box-shadow: 0px 0px 0.3px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+  }
+  input[type=range]::-ms-thumb {
+    box-shadow: 0px 0px 0px rgba(0, 0, 0, 0), 0px 0px 0px rgba(13, 13, 13, 0);
+    border: 1.5px solid #00ff00;
+    height: 23px;
+    width: 13px;
+    border-radius: 5px;
+    background: #ff4400;
+    cursor: pointer;
+    height: 8.3px;
+  }
+  input[type=range]:focus::-ms-fill-lower {
+    background: #3071a9;
+  }
+  input[type=range]:focus::-ms-fill-upper {
+    background: #3071a9;
+  }
+
+/*song editor-----------------------------------------------*/
+/* chord menu---------------------------------------------- */
+#gui-wrapper {
+    grid-area: gui;
+
+    min-height: 0;
+
+    @extend %grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        '. chord-menu';
+} 
+/* chord menu, etc. */
+#chord-menu-wrapper {
+    overflow: hidden;
+    grid-area: chord-menu;
+
+    background: $editor-bg-color;
+    text-align: center;
+
+    @extend %border;
+
+    @extend %grid;
+    grid-template-rows: auto 1fr auto auto;
+}
+#chord-menu {
+    overflow-y: scroll;
+
+    @extend %grid;
+    grid-template-rows: 1fr;
+}
+#chord-menu > * {
+    // uses grid-gap instead of vertical margin
+    margin: 0 auto;
+}
+#spacer-menu > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+#trash {
+    height: 50;
+    margin: auto;
+}
+#trash > * {
+    /* prevents chords from appearing here before being deleted */
+    display: none;
+}
+
+/* section menu ---------------------------------------*/
+#section-menu {
+    overflow: hidden;
+
+    text-align: center;
+
+    @extend %grid;
+    grid-template-columns: auto auto 1fr 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+        '. . . . .'
+        'key meter sections pattern repeat-pattern'
+        'content content content content content';
+}
+#key {
+    grid-area: key;
+    //max length of a key signature + padding
+    width: 4.5ch;
+}
+#meter, {
+    grid-area: meter;
+    // max width of a time signature (12/8) with comfortable padding (since inputs are measured by border-size)
+    width: 5.5ch;
+}
+#section-select {
+    grid-area: sections;
+
+    display: flex;
+    flex-flow: row nowrap;
+}
+#pattern {
+    grid-area: pattern;
+}
+#repeat-pattern {
+    grid-area: repeat-pattern;
+}
+#pattern, #repeat-pattern {
+    //for some reason, these extend beyond their containers without this
+    width: 12ch;
+}
+#section-wrapper {
+    overflow: scroll;
+
+    background-color: $editor-bg-color;
+
+    border: $border;
+    border-radius: $border-radius;
+
+    grid-area: content;
+}
+.section {
+    display: none;
+}
+/*gui drag zones and child elements*/
+.gui-line {
+    width: max-content;
+}
+.gui-line > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+.drag-chord, .spacer-bar, .spacer-dot {
+    cursor: move;
+    margin: .5em;
+
+    @extend %border;
+}
+.drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
+    background-color: $button-hover-color;
+}
+.drag-chord {
+    background-color: $button-bg-color;
+    color: $button-text-color;
+
+    height: $input-height;
+    box-sizing: border-box;
+    // different from button because the font size is different; maybe replace with button height and a readjusted padding?
+    padding: $button-padding;
+}
+.spacer-bar, .spacer-dot {
+    background-color: $spacer-color;
+}
+.spacer-bar {
+    width: $input-height*.5;
+    height: $input-height*1.5;
+}
+.spacer-dot {
+    width: $input-height * .75;
+    height: $input-height * .75;
+    border-radius: $input-height;
+}
+.sort-select, .sort-drag {
+    background-color: $button-active-color;
+}
+.sort-ghost {
+    background-color: $drag-ghost-color;
+    opacity: $drag-ghost-alpha;
+}
+.current-chord-gui {
+    border-color: $current-chord-color;
+}
+
+/* text editor ---------------------------------*/
+#text-wrapper {
+    grid-area: text-box;
+
+    @extend %grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+        '.'
+        '.'
+        '.'
+        '.';
+}
+/* song mode playback dashboard */
+#playback-dash {
+    /* grid-area: dashboard; */
+    @extend %border;
+    border-color: $auxExp-stroke;
+    padding: $grid-gap;
+
+    display: flex;
+    flex-flow: row nowrap;
+    // @extend %grid;
+    // grid-template-rows: 1fr;
+    // // grid-template-columns: auto auto auto auto auto;
+    // justify-content: center;
+}
+#playback-dash > label {
+    margin: auto 0;
+
+    text-align: right;
+}
+/* @media (max-width:960px) {
+    #song-metadata { display: none; }
+} */
+#playback-buttons {
+    grid-area: buttons;
+    margin: auto;
+}
+#pause {
+    display: none;
+}
+#repeat-toggle > * {
+    // element currently in playback dash
+    // grid-area: repeat;
+    margin: -.3rem 0;
+}
+
+#tempo {
+    //width of longest time signature (100+) plus a comfortable padding
+    width: 4.5ch;
+}
+#counter {
+    grid-area: counter;
+    /* set for max counter width (4/4:16chars) */
+    width: 18ch;
+
+    font-size: .85em;
+}
+/* metadata */
+#song-metadata {
+    @extend %grid;
+    grid-template-areas: 
+        '. .'
+        '. .';
+}
+#song-metadata > label {
+    margin: auto 0;
+    text-align: right;
+}
+#song-metadata > input {
+    margin: 0;
+}
+#text-controls {
+    @extend %grid;
+    grid-template-areas: 
+        '. . . .';
+}
+#upload {
+    display: none;
+}
+#text-editor {
+    //arbitrary
+    min-width: 30ch;
+    height: 100%;
+
+    resize: none;
+    text-align: left;
+}
+
+
+/*
+&#x1d11e;
+&#x1d122;
+&#x1f941;
+&#x1f568;
+&#x1f569;
+&flat;
+&sharp;
+&natural;
+&deg;
+&#x1d1a9;
+*/
+

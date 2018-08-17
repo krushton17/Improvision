@@ -614,24 +614,9 @@ let diagram = {
                         .attr('class', 'note-text')
                         .attr('y', 5)
                        //convert to most readable language
-                        .text(function(d) {
-                            switch(d.interval) {
-                                case ('dim7'):
-                                    return '\u{00B0}7';
-                                case ('m3'):
-                                    return '-3';
-                                case ('M3'):
-                                    return '\u{0394}3';
-                                case ('m7'):
-                                    return '-7';
-                                case ('M7'):
-                                    return '\u{0394}7';
-                                case ('uni'):
-                                    return '1';
-                                default:
-                                    return d.interval;
-                            }
-                        })
+                       .text(function(d) {
+                           return textToSymbol(d.interval)
+                       })
             })//end of 'each' block
     },//end of update function
 }//end of diagram class definition
@@ -662,7 +647,7 @@ let timer = {
     //!!create partial reset for pause
     //!!will need to set the countIn relative to
     //  the beginning of the current measure for pause
-    reset: function() {
+    reset: function(hard=false) {
         this.countIn = -4 * this.countsPerBeat
         // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
         this.counter = this.countIn;
@@ -673,6 +658,7 @@ let timer = {
         this.prevComponent = {};
         this.nextGUIel = undefined;
         //remove any existing note sets
+        //!!should be redunant now
         d3.selectAll('.note-set').remove();
     },//end of reset function
 
@@ -848,14 +834,20 @@ let timer = {
     playPause: function() {
         if (this.paused) {
             this.paused = false;
-            playBtn.value = '\u{25AE}\u{25AE}';
+            // playBtn.value = '\u{25AE}\u{25AE}';
+            playBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
             //set timer, and convert bpm to milliseconds:
             this.reset();
             this.beat = setInterval(this.repeat.bind(this), this.tempoMil);
         } else {
             this.paused = true;
+
+            pauseBtn.style.display = 'none';
+            playBtn.style.display = 'inline-block';
+
             audio.stop();
-            playBtn.value = '\u{25B6}';
+            // playBtn.value = '\u{25B6}';
             //this doesn't stop animations that have already started...
             clearInterval(this.beat);
             //this does
@@ -871,7 +863,18 @@ let timer = {
                     }
                 });
         }
-    }//end of playPause function
+    },//end of playPause function
+    stop: function() {
+        this.paused = true;
+        this.reset(true);
+
+        pauseBtn.style.display = 'none';
+        playBtn.style.display = 'inline-block';
+
+        audio.stop();
+        clearInterval(this.beat);
+        d3.selectAll('.note-set').remove();
+    },
 }//end of timer definition
 
 /*
@@ -896,9 +899,11 @@ let flash = function() {
 //let flasher = setInterval(flash, 100);
 */
 
-//add event listener to play/pause button
-let playBtn = document.getElementById('play/pause');
+//add event listener to play/pause buttons
+let playBtn = document.getElementById('play');
 playBtn.addEventListener('click', timer.playPause.bind(timer));
+let pauseBtn = document.getElementById('pause');
+pauseBtn.addEventListener('click', timer.playPause.bind(timer));
 
 //FILE HANDLING------------------------------------------------------------------------------------------
 
@@ -916,9 +921,9 @@ let song = new Song(contents);
 
 document.getElementById('text-editor').value = contents;
 
-//file handling: NOT deprecated!!
-/*
-function localFile(e) {
+//file handling
+//!!reintroduce automatically uploading the example file on page load
+function loadLocalFile(e) {
     let file = e.target.files[0];
     if (!file) {
         return;
@@ -934,9 +939,12 @@ function localFile(e) {
     }
     reader.readAsText(file);
 }
-//rearrange this
-document.getElementById('upload').addEventListener('change', localFile, false);
-*/
+//bypass the default file upload control
+let uploadButton = document.querySelector('#upload');
+uploadButton.addEventListener('click', loadLocalFile, false);
+let uploadDiv = document.querySelector('#upload-label');
+uploadDiv.addEventListener('click', function() {uploadButton.click(); })
+
 
 let editorGUI = {
     dragBoxes: [],
@@ -1003,7 +1011,7 @@ let editorGUI = {
         for (let chord in song.chordLibrary) {
             chordMenu.append('span')
                 .attr('class', 'drag-chord')
-                .html(chord);
+                .html(textToSymbol(chord));
         }
 
         //add tabs and tab content for each section
@@ -1043,10 +1051,10 @@ let editorGUI = {
                         if (component) {
                             lineBox.append('span')
                                 .attr('class', 'drag-chord')
-                                .html(component)
+                                .html(textToSymbol(component));
                         } else if (components) {
                             lineBox.append('span')
-                                .attr('class', 'spacer-dot')
+                                .attr('class', 'spacer-dot');
                         }
                     }
                     //add a measure bar to the end of the line
@@ -1141,7 +1149,7 @@ function GUItoText() {
                     switch (className) {
                         case 'drag-chord':
                             //this contains the name of the chord
-                            return component.innerHTML;
+                            return textToSymbol(component.innerHTML, true);
                         case 'spacer-dot':
                             return '.';
                         case 'spacer-bar':
@@ -1155,6 +1163,27 @@ function GUItoText() {
     console.log(text);
 }//end of GUItoText function
 
+//!!make this generalizable to other replacement functions!
+function textToSymbol(str, reversed = false) {
+    //add a setting to turn this off and use plain text
+    let pairs = [
+        ['uni', '1'],
+        ['dim', '\u{00b0}'],
+        ['m7b5', '\u{1d1a9}'],
+        ['M', '\u{0394}'],
+        ['m', '-'],
+        ['b', '\u{266d}'],
+        ['#', '\u{266f}']
+    ]
+    pairs.forEach(function(e) {
+        if (reversed) {
+            str = str.replace(e[1], e[0]);
+        } else {
+            str = str.replace(e[0], e[1]);
+        }
+    })
+    return str;
+}
 
 // WEB AUDIO API-----------------------------------------
 //!!oscillator generation functions could certainly be more DRY... create a recyclable function for that, maybe using a closure to remember the previous oscillators created with it?

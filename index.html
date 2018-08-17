@@ -2,7 +2,7 @@
 <head>
     <title>&#x1d106; improvision &#x1d107;</title>
     <!-- styles & fonts -->
-    <link rel='stylesheet' href='styles.css'>
+    <link rel='stylesheet' href='styles.min.css'>
     <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Cutive+Mono" rel="stylesheet">
     <!-- scripts -->
@@ -24,7 +24,8 @@
     <!-- song editor gui -->
         <span id='gui-wrapper' class='active-editor'>
             <span id='chord-menu-wrapper'>
-                Chord Menu
+                <!-- extra space above chord menu -->
+                <div></div>
                 <div id='chord-menu'></div>
                 <div id='spacer-menu'>
                     <span class='spacer-dot'></span>
@@ -39,6 +40,8 @@
                 <div id='section-menu'>
                     <label for='key'>Key:</label>
                     <input type='text' id='key'>
+                    <label for='meter'>Meter:</label>
+                    <input type='text' id='meter' value='4/4'>
                     <label for='section-select'>Sections:</label>
                     <div id='section-select'>
                         <input type='button' id='add-tab' value='+' class='tab'>
@@ -59,17 +62,25 @@
         <span id='text-wrapper' class='active-editor'>
             <!-- playback dashboard -->
             <div id='playback-dash'>
-                <div id='playback-buttons'>
-                    <input type='button' id='play/pause' value='&#9654;' class='symbol'>
-                    <input type='button' id='stop' value='&#9724;' class='symbol'>
-                    <input type='button' id='mute' value='&#x1f56A;' class='symbol'>
-                    <!-- <label for='repeat-toggle'>Repeat:</label> -->
-                    <input type='button' id='repeat-toggle' value='&#x1d106; &#x1d107;'>
-                </div>
-                <label for='tempo'>Tempo:</label>
-                <input type='number' id='tempo' value='120'>
-                <label for='meter'>Meter:</label>
-                <input type='text' id='meter' value='4/4'>
+                <!-- <div id='playback-buttons'> -->
+                    <div class='button' id='play'>
+                        <span class='symbol'>&#9654;</span>
+                    </div> 
+                    <div class='button' id='pause'>
+                        <span class='symbol'>&#x25ae;&#x25ae;</span>
+                    </div> 
+                    <div class='button' id='stop'>
+                        <span class='symbol'>&#9724;</span>
+                    </div>
+                    <div class='button' id='volume'>
+                        <span class='symbol'>&#x1f56a;</span>
+                    </div>
+                    <div class='button' id='repeat-toggle'>
+                        <span class='symbol'>&#x1d106; &#x1d107;</span>
+                    </div>
+                    <label for='tempo' class='inline-symbol'>&#x2669;=</label>
+                    <input type='number' id='tempo' value='120'>
+                <!-- </div> -->
                 <!-- <label for='swing-toggle'>Swing:</label>
                 <input type='checkbox' id='swing-toggle'> -->
                 <!-- <label for='count-in'>Count-in:</label> -->
@@ -86,15 +97,19 @@
                 <input type='text' id='transcriber'> -->
             </div>
             <div id='text-controls'>
-                <label for='upload' id='upload-label' class='button' style='text-decoration:underline'>&#x2b06;</label>
+                <span id='upload-label' class='button'>
+                    <span class='symbol' style='text-decoration:underline'>&#x2b06;</span>
+                </span>
                 <input type='file' id='upload'>
-                <input type='button' id='download' value='&#x2b07;' style='text-decoration:underline'>
+                <span id='download' class = 'button'>
+                    <span class='symbol' style='text-decoration:underline'>&#x2b07;</span>
+                </span>
                 <span id='text-to-gui' class='button'>
                     <span class='button-mono'>
-                        Cm7</span><span class='button-symbol'>
+                        Cm7</span><span class='symbol'>
                         &#x27a1;</span><span class='round-rect'>Cm7</span></span>
                 <span id='gui-to-text' class='button'>
-                        <span class='round-rect'>Cm7</span><span class='button-symbol'>
+                        <span class='round-rect'>Cm7</span><span class='symbol'>
                         &#x27a1;</span><span class='button-mono'>
                                 Cm7</span></span>
             </div>
@@ -102,5 +117,11 @@
         </span>
     <!-- </div> -->
 <!-- </div> -->
+<!-- &#x1d11e;
+&#x1d122;
+&#x1f941;
+&#x1f568;
+&#x1f569;
+&natural; -->
 </body>
 </html>
