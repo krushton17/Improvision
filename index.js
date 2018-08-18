@@ -244,7 +244,7 @@ let normalize = function(chord, root) {
     });
 }
 
-//SONG CLASS DEF----------------------------------------------------------------------------------------------------------
+//SONG CLASS DEF--------------------------------------------
 
 class Song {
     constructor(text) {
@@ -277,7 +277,7 @@ class Song {
         let sections = {};
         //extract the text strings representing each section
         //!!for some reason, trying to match more than one letter with + or * produces an error...
-        let sectionText = text.match(/\w\[[^\[\]]+\]/g);
+        let sectionText = text.match(/\w+\[[^\[\]]+\]/g);
         //loop through the sections and parse their components
         for (let string of sectionText) {
             //label = anything that comes before the [
@@ -333,7 +333,12 @@ class Song {
     constructSequence(sectionOrder, sections) {
         let constructedSeq = [];
         for (let i = 0; i < sectionOrder.length; i++) {
+            console.log(i);
+            console.log(sectionOrder);
+            console.log(sections);
+            console.log(sections[sectionOrder[i]])
             let section = sections[sectionOrder[i]];
+            if (!section) continue;
             console.log(section);
             for (let chordSeq of section) {
                 constructedSeq.push(chordSeq);
@@ -908,19 +913,19 @@ pauseBtn.addEventListener('click', timer.playPause.bind(timer));
 
 //FILE HANDLING------------------------------------------------------------------------------------------
 
-let contents = `(Summertime,Am,60,4/4,swing)
-;A,B,C;
-:A,B:
-A[Am7|Bbm7|Bm7.BM7.|Cm7.CM7.|
-C#m7|Dm7|D#m7.D#M7.|E7|
-Fm7|F#7|G7|G#7|
-CM7.Am7.|D7.E7.|]
-B[Am7.D7.|Bm7.E7.|]
-C[Am7||]`;
+// let contents = `(Summertime,Am,60,4/4,swing)
+// ;A,B,C;
+// :A,B:
+// A[Am7|Bbm7|Bm7.BM7.|Cm7.CM7.|
+// C#m7|Dm7|D#m7.D#M7.|E7|
+// Fm7|F#7|G7|G#7|
+// CM7.Am7.|D7.E7.|]
+// B[Am7.D7.|Bm7.E7.|]
+// C[Am7||]`;
 
-let song = new Song(contents);
+// let song = new Song(contents);
 
-document.getElementById('text-editor').value = contents;
+// document.getElementById('text-editor').value = contents;
 
 //file handling
 //!!reintroduce automatically uploading the example file on page load
@@ -938,7 +943,6 @@ function loadFile(local, e=null) {
     }
 }
 function readFile (file) {
-    //console.log(file);  
     let reader = new FileReader();
     reader.onload = function(e) {
         let contents = e.target.result;
@@ -951,6 +955,7 @@ function readFile (file) {
     }
     reader.readAsText(file);
 }
+
 loadFile(false);
 //bypass the default file upload control
 let uploadButton = document.querySelector('#upload');
@@ -1132,7 +1137,7 @@ function tabChange(evt, tabID) {
 //initialize drag-drop interface
 editorGUI.setup();
 //!!placeholder until this becomes part of song loading procedure
-editorGUI.GUIfromSong();
+//editorGUI.GUIfromSong();
 
 //show/hide gui vs text editor
 //!!may not be any point in hiding either if the screen is big
