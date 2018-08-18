@@ -334,6 +334,7 @@ class Song {
         let constructedSeq = [];
         for (let i = 0; i < sectionOrder.length; i++) {
             let section = sections[sectionOrder[i]];
+            console.log(section);
             for (let chordSeq of section) {
                 constructedSeq.push(chordSeq);
             }
@@ -719,7 +720,7 @@ let timer = {
         this.counter++;
 
         let clear = document.querySelectorAll('.current-chord-gui');
-        console.log(clear.classList);
+        //console.log(clear.classList);
         for (let obj of clear) {
             obj.classList.remove('current-chord-gui');
         }
@@ -759,7 +760,7 @@ let timer = {
         //let sectionIndex = 0;
         if (beat < 0) {return;}
         //for (let i = 0; i < beat; i++) {
-            console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
+            //console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
             if (this.componentIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
                     .childNodes[this.lineIndex]
                     .querySelectorAll('.drag-chord').length) {
@@ -785,8 +786,8 @@ let timer = {
                 .querySelectorAll('.drag-chord')[this.componentIndex];
         
         this.currentComponent.classList.add('current-chord-gui');
-        console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
-            .querySelectorAll('.drag-chord')[this.componentIndex]);
+        //console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
+        //    .querySelectorAll('.drag-chord')[this.componentIndex]);
 
         this.componentIndex++;
     },
@@ -923,11 +924,21 @@ document.getElementById('text-editor').value = contents;
 
 //file handling
 //!!reintroduce automatically uploading the example file on page load
-function loadLocalFile(e) {
-    let file = e.target.files[0];
-    if (!file) {
-        return;
+function loadFile(local, e=null) {
+    let file;
+    if (local) {
+        file = e.target.files[0];
+        if (file) { readFile(file); }
+    } else {
+        //promises are weird...
+        file = fetch('./test.music').then(function(response) {
+            response.blob().then(function(blob) {
+                readFile(blob);
+            })});
     }
+}
+function readFile (file) {
+    //console.log(file);  
     let reader = new FileReader();
     reader.onload = function(e) {
         let contents = e.target.result;
@@ -936,15 +947,38 @@ function loadLocalFile(e) {
         //parse song data from file
         song = new Song(contents);
         editorGUI.setup();
+        editorGUI.GUIfromSong();
     }
     reader.readAsText(file);
 }
+loadFile(false);
 //bypass the default file upload control
 let uploadButton = document.querySelector('#upload');
-uploadButton.addEventListener('click', loadLocalFile, false);
+uploadButton.addEventListener('change', loadFile.bind(null, true), false);
 let uploadDiv = document.querySelector('#upload-label');
 uploadDiv.addEventListener('click', function() {uploadButton.click(); })
 
+function download(text, filename) {
+    var file = new Blob([text], {type: 'text/plain'});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        //garbage collection
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+
+let downloadDiv = document.querySelector('#download');
+downloadDiv.addEventListener('click', function() {download(document.getElementById('text-editor').value, song.title + '.music'); });
 
 let editorGUI = {
     dragBoxes: [],
@@ -1160,7 +1194,7 @@ function GUItoText() {
         }//end of line loop
         text += ']';
     }//end of section loop
-    console.log(text);
+    //console.log(text);
 }//end of GUItoText function
 
 //!!make this generalizable to other replacement functions!
@@ -1230,7 +1264,6 @@ let audio = {
         this.stop.call(this);
         this.treble = [];
         let root = encodeNote(chord.root);
-        console.log(root);
         //assign root to bass
         this.bass = this.context.createOscillator();
         this.bass.frequency.value = this.frequency(root, 2);
@@ -1256,9 +1289,7 @@ let audio = {
 
     //stop all notes (doesn't work on percussion)
     stop: function() {
-        console.log(this);
         if (this.bass) {
-            console.log(this);
             this.bass.stop();
             for (let i of this.treble) {
                 i.stop();
