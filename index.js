@@ -262,11 +262,11 @@ class Song {
                 beatsPerMeasure /= 3;
             }
             //swing boolean
-            let swing = header[4] && header[4] == 'swing';
+            //let swing = header[4] && header[4] == 'swing';
             return {
                 beatsPerMeasure: beatsPerMeasure,
                 beatUnits: beatUnits,
-                swing: swing
+                //swing: swing
             };
         })();//end of meter parsing
         this.singleStruct = /;.*;/.exec(text)[0].slice(1,-1).split(',');
@@ -278,6 +278,7 @@ class Song {
         //extract the text strings representing each section
         //!!for some reason, trying to match more than one letter with + or * produces an error...
         let sectionText = text.match(/\w+\[[^\[\]]+\]/g);
+        console.log(sectionText);
         //loop through the sections and parse their components
         for (let string of sectionText) {
             //label = anything that comes before the [
@@ -296,7 +297,8 @@ class Song {
                     let measure = measures[j];
                     //divide the measure into its components
                     //  the components are either chords or periods (.)
-                    let components = measure.match(/[^\.]+|\./g)
+                    //  chords can also be separated by spaces if there is not a spacer between them!
+                    let components = measure.match(/[^ \.]+|\./g)
                     //if there are no matches, create an empty array
                     if (!components) {
                         components = [];
@@ -633,12 +635,14 @@ diagram.setup();
 //TIMING------------------------------------------------------------------------------------------------------------
 
 let timer = {
+    //!!quick and dirty
+    swing: false,
     //find out how many counts per beat
     get countsPerBeat() {
-        //!!pull this from the textbox
+        //!!pull this from the input
         //if the time signature is in 8ths, 1 count per beat is enough
         //  otherwise 3 or 4, depending on whether swing == true
-        return song.meter.beatUnits == 8 || song.meter.swing ? 3 : 4;
+        return song.meter.beatUnits == 8 || this.swing ? 3 : 4;
     },
     //convert tempo to milliseconds (factoring in counts per beat)
     get tempoMil() {
@@ -822,7 +826,7 @@ let timer = {
             marquis = (count/this.countsPerBeat+1);
             audio.percussion(false, false, false, true);
         //if this is an upbeat (e.g. an 8th note in common time)
-        } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! song.meter.swing) {
+        } else if (subCount % 2 == 0 && song.meter.beatUnits !=8 && ! this.swing) {
             marquis = '&';
         //if this is a sixteenth note or a tripled 8th note
         } else {
@@ -1045,6 +1049,15 @@ let editorGUI = {
     GUIfromSong: function() {
         //d3: instantiate GUI elements
 
+        //slightly recycled code
+        ['title','key','tempo'].forEach(function(e) {
+            document.querySelector(`#${e}`).value = song[e];
+        });
+        document.querySelector('#meter').value = song.meter.beatsPerMeasure + '/' + song.meter.beatUnits;
+        document.querySelector('#pattern').value = song.singleStruct.join(',');
+        document.querySelector('#repeat-pattern').value = song.repeatStruct.join(',');
+        
+
         //add chords in library to chord menu
         let chordMenu = d3.select('#chord-menu')
         for (let chord in song.chordLibrary) {
@@ -1164,17 +1177,22 @@ function editorToggle(GUIselect) {
 //convert GUI elements to text
 function GUItoText() {
     //!!add validation
-    let text = '';
-    //!!add header info
 
-    //loop through the GUI elements
+    //convert GUI elements to text
+    //header
+    let text = '(' + ['title','key','tempo','meter'].map(e => document.querySelector(`#${e}`).value).join(',') + ')\n';
+    //patterns
+    text += ';' + document.querySelector('#pattern').value + ';\n';
+    let repeat = document.querySelector('#repeat-pattern').value;
+    if (repeat) { text += ':' + repeat + ':\n'; }
+    //sections
     let sections = document.querySelectorAll('.section');
     for (let section of sections) {
         //start each section with a line break,
         //  the name of the section, and an opening bracket
         //magic number 8 = the length of 'section-',
         //  the irrelevant part of the id name
-        text += '\n' + section.id.slice(8) + '[';
+        text += section.id.slice(8) + '[';
         let lines = section.childNodes;
         for (i = 0; i < lines.length; i++) {
             let line = lines[i];
@@ -1199,8 +1217,17 @@ function GUItoText() {
         }//end of line loop
         text += ']';
     }//end of section loop
-    //console.log(text);
+    console.log(text);
+    document.querySelector('#text-editor').value = text;
+    song = new Song(text);
 }//end of GUItoText function
+
+document.querySelector('#gui-to-text').addEventListener('click', GUItoText);
+document.querySelector('#text-to-gui').addEventListener('click', function() {
+        song = new Song(document.querySelector('#text-editor').value);
+        editorGUI.GUIfromSong();    
+    });
+
 
 //!!make this generalizable to other replacement functions!
 function textToSymbol(str, reversed = false) {

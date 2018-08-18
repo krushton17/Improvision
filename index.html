@@ -62,36 +62,29 @@
         <span id='text-wrapper' class='active-editor'>
             <!-- playback dashboard -->
             <div id='playback-dash'>
-                <!-- <div id='playback-buttons'> -->
-                    <div class='button' id='play'>
-                        <span class='symbol'>&#9654;</span>
-                    </div> 
-                    <div class='button' id='pause'>
-                        <span class='symbol'>&#x25ae;&#x25ae;</span>
-                    </div> 
-                    <div class='button' id='stop'>
-                        <span class='symbol'>&#9724;</span>
-                    </div>
-                    <div class='button' id='volume'>
-                        <span class='symbol'>&#x1f56a;</span>
-                    </div>
-                    <div class='button' id='repeat-toggle'>
-                        <span class='symbol'>&#x1d106; &#x1d107;</span>
-                    </div>
-                    <label for='tempo' class='inline-symbol'>&#x2669;=</label>
-                    <input type='number' id='tempo' value='120'>
-                <!-- </div> -->
-                <!-- <label for='swing-toggle'>Swing:</label>
-                <input type='checkbox' id='swing-toggle'> -->
-                <!-- <label for='count-in'>Count-in:</label> -->
-                <!-- <input type='number' id='count-in' value='4'> -->
-                <!-- <input type='text' id='counter' readonly> -->
-                <!-- <input type='range' id='volume-master'> -->
+                <div class='button' id='play'>
+                    <span class='symbol'>&#9654;</span>
+                </div> 
+                <div class='button' id='pause'>
+                    <span class='symbol'>&#x25ae;&#x25ae;</span>
+                </div> 
+                <div class='button' id='stop'>
+                    <span class='symbol'>&#9724;</span>
+                </div>
+                <div class='button' id='volume'>
+                    <span class='symbol'>&#x1f56a;</span>
+                </div>
+                <div class='button' id='repeat-toggle'>
+                    <span class='symbol'>&#x1d106; &#x1d107;</span>
+                </div>
+                <img src='icons/swing.svg' id='swing' class='button'>
+                <label for='tempo' class='inline-symbol'>&#x2669;=</label>
+                <input type='number' id='tempo' value='120'>
             </div>
             <div id='song-metadata'>
-                <label for='title'>Song Title:</label>
+                <label for='title'>Song:</label>
                 <input type='text' id='title'>
-                <label for='writer'>Written By:</label>
+                <label for='writer'>By:</label>
                 <input type='text' id='writer'>
                 <!-- <label for='transcriber'>Transcribed By:</label>
                 <input type='text' id='transcriber'> -->
