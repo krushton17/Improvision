@@ -431,28 +431,20 @@ input[type=range] {
     text-align: center;
 
     @extend %grid;
-    grid-template-columns: auto auto 1fr 1fr;
+    grid-template-columns: auto auto auto 1fr;
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
-        '. . . . .'
-        'key meter sections pattern repeat-pattern'
-        'content content content content content';
-}
-#key {
-    grid-area: key;
-    //max length of a key signature + padding
-    width: 4.5ch;
-    text-align: center;
-}
-#meter, {
-    grid-area: meter;
-    // max width of a time signature (12/8) with comfortable padding (since inputs are measured by border-size)
-    width: 5.5ch;
-    text-align: center;
+        '. . . .'
+        'sections pattern repeat-pattern .'
+        'content content content content';
 }
 #section-select {
     grid-area: sections;
 
+    display: flex;
+    flex-flow: row nowrap;
+}
+#section-selectors {
     display: flex;
     flex-flow: row nowrap;
 }
@@ -575,12 +567,6 @@ input[type=range] {
     // grid-area: repeat;
     margin: -.3rem 0;
 }
-
-#tempo {
-    //width of longest time signature (100+) plus a comfortable padding
-    width: 4.5ch;
-    text-align: right;
-}
 #counter {
     grid-area: counter;
     /* set for max counter width (4/4:16chars) */
@@ -591,17 +577,44 @@ input[type=range] {
 /* metadata */
 #song-metadata {
     @extend %grid;
-    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto auto;
     grid-template-areas: 
-        '. .'
-        '. .';
+        '. title title title title title'
+        '. by by by by by'
+        '. key . meter . tempo';
+    justify-content: space-between;
 }
 #song-metadata > label {
     margin: auto 0;
     text-align: right;
+    max-height: $input-height;
 }
 #song-metadata > input {
     margin: 0;
+}
+#title {
+    grid-area: title;
+}
+#by {
+    grid-area: by;
+}
+#key {
+    grid-area: key;
+    //max length of a key signature + padding
+    width: 4.5ch;
+    text-align: center;
+}
+#meter, {
+    grid-area: meter;
+    // max width of a time signature (12/8) with comfortable padding (since inputs are measured by border-size)
+    width: 5.5ch;
+    text-align: center;
+}
+#tempo {
+    grid-area: tempo;
+    //width of longest time signature (100+) plus a comfortable padding
+    width: 4.5ch;
+    text-align: right;
 }
 #text-controls {
     @extend %grid;

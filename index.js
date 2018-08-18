@@ -1048,6 +1048,8 @@ let editorGUI = {
     //do this after loading song data
     GUIfromSong: function() {
         //d3: instantiate GUI elements
+        d3.selectAll('.section').remove();
+        d3.selectAll('.section-selector').remove();
 
         //slightly recycled code
         ['title','key','tempo'].forEach(function(e) {
@@ -1070,12 +1072,17 @@ let editorGUI = {
         for (let section of Object.keys(song.components).sort()) {
             
             //tab selector button
-            d3.select('#section-select').append('input')
+            d3.select('#section-selectors').append('input')
                 .attr('type', 'button')
                 .attr('id', 'section-selector-' + section)
+                .attr('class', 'section-selector')
                 .attr('value', section)
                 //!!add (right-click || touch-and-hold) event to edit
                 .attr('onclick', `tabChange(event, 'section-${section}')`);
+            d3.select('#section-selectors').append('div')
+                .attr('class', 'section-selector')
+                //magic number .5rem = $grid-gap
+                .style('width', '.5rem');
             
             //tab content
             let sectionDiv = d3.select('#section-wrapper').append('div')
@@ -1140,9 +1147,8 @@ function tabChange(evt, tabID) {
         tabcontent[i].style.display = "none";
     }
     tablinks = document.getElementsByClassName("tab");
-    for (let i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
+    d3.selectAll('.section-selector').classed('active', false);
+    
     document.getElementById(tabID).style.display = "block";
     evt.currentTarget.className += " active";
 }
