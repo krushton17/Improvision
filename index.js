@@ -628,19 +628,15 @@ diagram.setup();
 
 //TIMING------------------------------------------------------------------------------------------------------------
 
-class songNav {
+class SongNav {
     get section() {
         return song.components[this.structure[this.sectionIndex]];
     }
-    get line() {
-        return this.section[this.lineIndex];
-    }
-    get measure() {
-        return this.line[this.measureIndex];
-    }
-    get chord() {
-        return this.measure[this.beatIndex];
-    }
+    get line() { return this.section[this.lineIndex]; }
+    get measure() { return this.line[this.measureIndex]; }
+    get chord() { return this.measure[this.beatIndex]; }
+
+    //!!cleaner to have an index object with properties named 'section', 'line', etc.?
 
     constructor(previous) {
         this.sectionIndex = previous ? previous.sectionIndex : 0;
@@ -649,7 +645,7 @@ class songNav {
         this.beatIndex = previous ? previous.beatIndex : 0;
         //do this here so toggling repeat mid-playback doesn't have any effect
         this.structure = previous ? previous.structure : timer.repeat ? song.repeatStruct : song.singleStruct;
-    }
+    }// end of constructor
 
     increment(nextChord=false) {
         let steps = 0;
@@ -679,7 +675,7 @@ class songNav {
         //return the number of times the do block was executed (if nextChord is true, this is the number of beats until the next chord)
         return steps;
     }
-}
+}// end of SongNav definition
 
 let timer = {
     //!!quick and dirty
@@ -706,24 +702,23 @@ let timer = {
     //!!will need to set the countIn relative to
     //  the beginning of the current measure for pause
     reset: function(hard=false) {
-        this.countIn = true
+        this.countIn = song.meter.beatsPerMeasure;
         // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
         this.counter = 0;
         this.beatIndex = 0;
 
         if (hard) {
-            this.currentPos = new songNav;
-            this.sectionIndex = 0;
-            this.lineIndex = 0;
-            this.measureIndex = 0;
+            this.currentPos = new SongNav;
+            //!!this should all be redundant now; no longer used
+            // this.sectionIndex = 0;
+            // this.lineIndex = 0;
+            // this.measureIndex = 0;
         } else {
             this.currentPos.beatIndex = 0;
         }
         this.currentGUIel = {};
-        //this.prevComponent = {};
-        //this.nextGUIel = undefined;
         //remove any existing note sets
-        //!!should be redunant now
+        //!!should be redunant now (why?)
         d3.selectAll('.note-set').remove();
     },//end of reset function
 
@@ -745,59 +740,54 @@ let timer = {
 
     altStep: function() {
         //increment counter and see if we're at a beat change
-        if (this.counter++ % this.countsPerBeat != 0) { return }//++this.counter; }
+        if (this.counter++ % this.countsPerBeat != 0) { return; }
+        //equivalent to resetting it to 0 and then incrementing it
         this.counter = 1;
 
-        let currentChord = song.chordLibrary[this.currentPos.chord];
-        if (!currentChord) {
-            this.currentPos.increment();
-            return;
-        }
+        //play metronome here?
 
-        let findNext = new songNav(this.currentPos);
+        //the chord that starts on this beat
+        let currentChord = song.chordLibrary[this.currentPos.chord];
+
+        //prepare for the next chord
+        let findNext = new SongNav(this.currentPos);
         let beatsToNext = findNext.increment(true);
         let nextChord = song.chordLibrary[findNext.chord];
+        
+        if (this.countIn) {
+            //only do this on the first beat of the countIn
+            if (this.countIn == song.meter.beatsPerMeasure) {
+                let fadeIn = song.meter.beatsPerMeasure * this.countsPerBeat * this.tempoMil;
+                let duration = beatsToNext*this.countsPerBeat*this.tempoMil;
+                diagram.update(currentChord, fadeIn, duration)
 
+                //play chord
+            }
+            //count down until countIn is falsy
+            this.countIn--;
+        } else {
+            //if there is a chord change on this beat
+            if (currentChord) {
+                //find the NEXT next chord so we know how long the next chord should be displayed on the diagram
+                let findNextNext = new SongNav(findNext);
+                let beatsToNextNext = findNextNext.increment(true);
 
-        let findNextNext = new songNav(findNext);
-        let beatsToNextNext = findNextNext.increment(true);
+                let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
+                let duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
+                diagram.update(nextChord, fadeIn, duration);
 
-        let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
-        let duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
-        // if (this.countIn) {
-        //     fadeIn = this.beatsPerMeasure*this.countsPerBeat*this.tempoMil;
-        //     duration = beatsToNext*this.countsPerBeat*this.tempoMil;
-        //     nextChord = currentChord;
-        // }
-        diagram.update(nextChord, fadeIn, duration);
+                //play chord
 
-        //play sound
-        //update GUI
-
-
-        this.currentPos.increment();
-        if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
-            stop();
-        }
-
-    },
+                //update GUI
+            }
+            //either way, move to the next beat
+            this.currentPos.increment();
+            if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
+                stop();
+            }
+        }//end of 'if countIn' block
+    },//end of altStep function
     
-
-    // reset: function(hard=false) {
-    //     this.countIn = -4 * this.countsPerBeat
-    //     // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
-    //     this.counter = this.countIn;
-    //     this.sectionIndex = 0;
-    //     this.lineIndex = 0;
-    //     this.beatIndex = 0;
-    //     this.currentGUIel = {};
-    //     //this.prevComponent = {};
-    //     //this.nextGUIel = undefined;
-    //     //remove any existing note sets
-    //     //!!should be redunant now
-    //     d3.selectAll('.note-set').remove();
-    // },//end of reset function
-
     //increment the counter and update the diagram
     step: function() {
 
@@ -875,6 +865,7 @@ let timer = {
         */
     },//end of repeat function
 
+    //!!should be deprecated now
     //scan ahead in the chord sequence for the next chord change
     findNextChord(sequence, beat) {
         for (let i = 1; i < sequence.length; i++) {
