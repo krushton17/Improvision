@@ -630,7 +630,7 @@ diagram.setup();
 
 class SongNav {
     get section() {
-        return song.components[this.structure[this.sectionIndex]];
+        return song.components[this.sectionName];
     }
     get sectionName() {
         return this.structure[this.sectionIndex];
@@ -1324,41 +1324,47 @@ function GUItoText() {
 
     //convert GUI elements to text
     //header
-    let text = '(' + ['title','key','tempo','meter'].map(e => document.querySelector(`#${e}`).value).join(',') + ')\n';
+    let text = `(${['title','key','tempo','meter'].map(e => document.querySelector(`#${e}`).value).join(',')})`;
     //patterns
-    text += ';' + document.querySelector('#pattern').value + ';\n';
+    text += `\n;${document.querySelector('#pattern').value};`;
     let repeat = document.querySelector('#repeat-pattern').value;
-    if (repeat) { text += ':' + repeat + ':\n'; }
+    if (repeat) { text += `\n:${repeat}:`; } // + ':\n'; }
     //sections
-    let sections = document.querySelectorAll('.section');
-    for (let section of sections) {
+    for (let section of document.querySelectorAll('.section')) {
         //start each section with a line break,
         //  the name of the section, and an opening bracket
         //magic number 8 = the length of 'section-',
         //  the irrelevant part of the id name
-        text += section.id.slice(8) + '[';
-        let lines = section.childNodes;
-        for (i = 0; i < lines.length; i++) {
-            let line = lines[i];
+        text += `\n${section.id.slice(8)}[`;
+        section.querySelectorAll('.gui-line').forEach(function(line, i) {
             //no line break for the first line
             if (i != 0) { text += '\n'; }
-            let components = line.childNodes;
-            for (let component of components) {
-                //get the component info from the class name
-                let className = component.className;
-                text+= (function() {
-                    switch (className) {
-                        case 'gui-chord':
-                            //this contains the name of the chord
-                            return textToSymbol(component.innerHTML, true);
-                        case 'spacer-dot':
-                            return '.';
-                        case 'spacer-bar':
-                            return '|';
-                    }//end of switch block
-                })();
-            }//end of component loop
-        }//end of line loop
+            for (let measure of line.querySelectorAll('.gui-measure')) {
+                let measureText = '';
+                let chords = 0;
+                let chordOnFirst = false;
+                measure.querySelectorAll('.gui-beat').forEach(function(beat, i){
+                    //chord = the actual draggable chord object, or undefined if the measure is empty
+                    let chord = beat.querySelector('.gui-chord');
+                    if (chord) {
+                        measureText += textToSymbol(chord.innerHTML, true);
+                        chords += 1;
+                        if (i == 0) { chordOnFirst = true; }
+                    } else {
+                        //if the beat has no chord change
+                        measureText += '.';
+                    }
+                });//end of beat loop
+                //remove unnecessary zeroes
+                if (chords == 0) {
+                    measureText = '';
+                } else if (chords == 1 && chordOnFirst) {
+                    measureText = measureText.slice(0, measureText.indexOf('.'));
+                }
+                //apply changes and add bar to end measure
+                text += measureText + '|';
+            }//end of measure loop
+        });//end of line loop
         text += ']';
     }//end of section loop
     document.querySelector('#text-editor').value = text;
