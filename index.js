@@ -278,7 +278,6 @@ class Song {
         //extract the text strings representing each section
         //!!for some reason, trying to match more than one letter with + or * produces an error...
         let sectionText = text.match(/\w+\[[^\[\]]+\]/g);
-        console.log(sectionText);
         //loop through the sections and parse their components
         for (let string of sectionText) {
             //label = anything that comes before the [
@@ -298,25 +297,25 @@ class Song {
                     //divide the measure into its components
                     //  the components are either chords or periods (.)
                     //  chords can also be separated by spaces if there is not a spacer between them!
-                    let components = measure.match(/[^ \.]+|\./g)
+                    let beats = measure.match(/[^ \.]+|\./g)
                     //if there are no matches, create an empty array
-                    if (!components) {
-                        components = [];
+                    if (!beats) {
+                        beats = [];
                     }
                     //if there is too much information in the measure, generate an error message
-                    if (components.length > this.meter.beatsPerMeasure) {
+                    if (beats.length > this.meter.beatsPerMeasure) {
                         console.log('This measure was truncated because it was too long!')
                     }
                     //set the length of the array to the number of beats in each measure
-                    components.length = this.meter.beatsPerMeasure;
+                    beats.length = this.meter.beatsPerMeasure;
                     //loop through the components
-                    for (let i = 0; i < components.length; i++) {
+                    for (let i = 0; i < beats.length; i++) {
                         //for consistency, take out the periods
-                        if (components[i] == '.') { components[i] = undefined; }
+                        if (beats[i] == '.') { beats[i] = undefined; }
                         //add the components of this measure to the end of the chord sequence
-                        chordSeq.push(components[i])
+                        chordSeq.push(beats[i])
                     }
-                    measures[j] = components;
+                    measures[j] = beats;
                 }
                 lines[i] = measures;
             }
@@ -335,13 +334,8 @@ class Song {
     constructSequence(sectionOrder, sections) {
         let constructedSeq = [];
         for (let i = 0; i < sectionOrder.length; i++) {
-            console.log(i);
-            console.log(sectionOrder);
-            console.log(sections);
-            console.log(sections[sectionOrder[i]])
             let section = sections[sectionOrder[i]];
             if (!section) continue;
-            console.log(section);
             for (let chordSeq of section) {
                 constructedSeq.push(chordSeq);
             }
@@ -634,9 +628,63 @@ diagram.setup();
 
 //TIMING------------------------------------------------------------------------------------------------------------
 
+class songNav {
+    get section() {
+        return song.components[this.structure[this.sectionIndex]];
+    }
+    get line() {
+        return this.section[this.lineIndex];
+    }
+    get measure() {
+        return this.line[this.measureIndex];
+    }
+    get chord() {
+        return this.measure[this.beatIndex];
+    }
+
+    constructor(previous) {
+        this.sectionIndex = previous ? previous.sectionIndex : 0;
+        this.lineIndex = previous ? previous.lineIndex : 0;
+        this.measureIndex = previous ? previous.measureIndex : 0;
+        this.beatIndex = previous ? previous.beatIndex : 0;
+        //do this here so toggling repeat mid-playback doesn't have any effect
+        this.structure = previous ? previous.structure : timer.repeat ? song.repeatStruct : song.singleStruct;
+    }
+
+    increment(nextChord=false) {
+        let steps = 0;
+        //closure
+        //return function(steps=0) {
+        do {
+            if (++this.beatIndex >= this.measure.length) {
+                this.beatIndex = 0;
+                this.measureIndex++;
+                if (this.measureIndex >= this.line.length) {
+                    this.measureIndex = 0;
+                    this.lineIndex++;
+                    if (this.lineIndex >= this.section.length) {
+                        this.lineIndex = 0;
+                        this.sectionIndex++;
+                        if (this.sectionIndex >= this.structure.length &&timer.repeat) {
+                                this.sectionIndex = 0;
+                        }
+                    }
+                }
+            }
+            //count the number of times the do block is executed
+            steps++;
+        }
+        //repeat the do block if the nextChord parameter is true and if we have yet to find a chord
+        while (nextChord && !this.chord);
+        //return the number of times the do block was executed (if nextChord is true, this is the number of beats until the next chord)
+        return steps;
+    }
+}
+
 let timer = {
     //!!quick and dirty
     swing: false,
+    repeat: true,
     //find out how many counts per beat
     get countsPerBeat() {
         //!!pull this from the input
@@ -658,22 +706,100 @@ let timer = {
     //!!will need to set the countIn relative to
     //  the beginning of the current measure for pause
     reset: function(hard=false) {
-        this.countIn = -4 * this.countsPerBeat
+        this.countIn = true
         // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
-        this.counter = this.countIn;
-        this.sectionIndex = 0;
-        this.lineIndex = 0;
-        this.componentIndex = 0;
-        this.currentComponent = {};
-        this.prevComponent = {};
-        this.nextGUIel = undefined;
+        this.counter = 0;
+        this.beatIndex = 0;
+
+        if (hard) {
+            this.currentPos = new songNav;
+            this.sectionIndex = 0;
+            this.lineIndex = 0;
+            this.measureIndex = 0;
+        } else {
+            this.currentPos.beatIndex = 0;
+        }
+        this.currentGUIel = {};
+        //this.prevComponent = {};
+        //this.nextGUIel = undefined;
         //remove any existing note sets
         //!!should be redunant now
         d3.selectAll('.note-set').remove();
     },//end of reset function
 
+    get structure() {
+        return this.repeat ? song.repeatStruct : song.singleStruct;
+    },
+    get section() {
+        return song.components[this.structure[this.sectionIndex]];
+    },
+    get line() {
+        return this.section[this.lineIndex];
+    },
+    get measure() {
+        return this.line[this.measureIndex];
+    },
+    get beat() {
+        return this.measure[this.beatIndex];
+    },
+
+    altStep: function() {
+        //increment counter and see if we're at a beat change
+        if (this.counter++ % this.countsPerBeat != 0) { return }//++this.counter; }
+        this.counter = 1;
+
+        let currentChord = song.chordLibrary[this.currentPos.chord];
+        if (!currentChord) {
+            this.currentPos.increment();
+            return;
+        }
+
+        let findNext = new songNav(this.currentPos);
+        let beatsToNext = findNext.increment(true);
+        let nextChord = song.chordLibrary[findNext.chord];
+
+
+        let findNextNext = new songNav(findNext);
+        let beatsToNextNext = findNextNext.increment(true);
+
+        let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
+        let duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
+        // if (this.countIn) {
+        //     fadeIn = this.beatsPerMeasure*this.countsPerBeat*this.tempoMil;
+        //     duration = beatsToNext*this.countsPerBeat*this.tempoMil;
+        //     nextChord = currentChord;
+        // }
+        diagram.update(nextChord, fadeIn, duration);
+
+        //play sound
+        //update GUI
+
+
+        this.currentPos.increment();
+        if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
+            stop();
+        }
+
+    },
+    
+
+    // reset: function(hard=false) {
+    //     this.countIn = -4 * this.countsPerBeat
+    //     // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
+    //     this.counter = this.countIn;
+    //     this.sectionIndex = 0;
+    //     this.lineIndex = 0;
+    //     this.beatIndex = 0;
+    //     this.currentGUIel = {};
+    //     //this.prevComponent = {};
+    //     //this.nextGUIel = undefined;
+    //     //remove any existing note sets
+    //     //!!should be redunant now
+    //     d3.selectAll('.note-set').remove();
+    // },//end of reset function
+
     //increment the counter and update the diagram
-    repeat: function() {
+    step: function() {
 
         //update the marquis textbox
         this.marquis();
@@ -742,10 +868,10 @@ let timer = {
         }
         //queue the GUI element that matches the next chord
         this.nextGUIel = d3.select(`#section-${song.structure[this.sectionIndex]}`)
-            .select(`#chord-${this.componentIndex}`);
+            .select(`#chord-${this.beatIndex}`);
         
         //advance component from next to current
-        this.prevComponent = currentComponent;
+        this.prevComponent = currentGUIel;
         */
     },//end of repeat function
 
@@ -755,7 +881,8 @@ let timer = {
             //check each beat until a chord is found
             nextIndex = i + beat;
             //!!add branching for repeat vs. single play
-            nextIndex=(nextIndex+sequence.length)%sequence.length
+            //!!^ shouldn't be necessary now
+            nextIndex%=sequence.length
             //once the chord is found, break out of the loop
             if (sequence[nextIndex]) {
                 return nextIndex;
@@ -764,16 +891,16 @@ let timer = {
     },
 
     matchGUItoChord(beat) {
-        //let componentIndex = 0;
+        //let beatIndex = 0;
         //let lineIndex = 0;
         //let sectionIndex = 0;
         if (beat < 0) {return;}
         //for (let i = 0; i < beat; i++) {
             //console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
-            if (this.componentIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
+            if (this.beatIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
                     .childNodes[this.lineIndex]
                     .querySelectorAll('.drag-chord').length) {
-                this.componentIndex = 0;
+                this.beatIndex = 0;
                 this.lineIndex++;
                 if (this.lineIndex >= song.components[song.singleStruct[this.sectionIndex]].length) {
                     this.lineIndex = 0;
@@ -786,19 +913,19 @@ let timer = {
             }
         //}
         //not sure I need this
-        //this.prevComponent = this.currentComponent;
+        //this.prevComponent = this.currentGUIel;
         //!!make a separate function for looping through the GUI elements
         //  to be reused to convert GUI to text
-        this.currentComponent =
+        this.currentGUIel =
             document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
                 .childNodes[this.lineIndex]
-                .querySelectorAll('.drag-chord')[this.componentIndex];
+                .querySelectorAll('.drag-chord')[this.beatIndex];
         
-        this.currentComponent.classList.add('current-chord-gui');
+        this.currentGUIel.classList.add('current-chord-gui');
         //console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
-        //    .querySelectorAll('.drag-chord')[this.componentIndex]);
+        //    .querySelectorAll('.drag-chord')[this.beatIndex]);
 
-        this.componentIndex++;
+        this.beatIndex++;
     },
     
     //display the count in a textbox; play sound on downbeats
@@ -848,8 +975,8 @@ let timer = {
             playBtn.style.display = 'none';
             pauseBtn.style.display = 'inline-block';
             //set timer, and convert bpm to milliseconds:
-            this.reset();
-            this.beat = setInterval(this.repeat.bind(this), this.tempoMil);
+            this.reset(true);
+            this.beat = setInterval(this.altStep.bind(this), this.tempoMil);
         } else {
             this.paused = true;
 
@@ -886,7 +1013,6 @@ let timer = {
         d3.selectAll('.note-set').remove();
     },
 }//end of timer definition
-
 /*
 //function to make outgoing notes flash
 //!move this into the timer function eventually
@@ -1223,9 +1349,9 @@ function GUItoText() {
         }//end of line loop
         text += ']';
     }//end of section loop
-    console.log(text);
     document.querySelector('#text-editor').value = text;
     song = new Song(text);
+    timer.reset(true);
 }//end of GUItoText function
 
 document.querySelector('#gui-to-text').addEventListener('click', GUItoText);
