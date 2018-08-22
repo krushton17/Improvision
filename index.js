@@ -632,6 +632,9 @@ class SongNav {
     get section() {
         return song.components[this.structure[this.sectionIndex]];
     }
+    get sectionName() {
+        return this.structure[this.sectionIndex];
+    }
     get line() { return this.section[this.lineIndex]; }
     get measure() { return this.line[this.measureIndex]; }
     get chord() { return this.measure[this.beatIndex]; }
@@ -760,8 +763,6 @@ let timer = {
                 let fadeIn = song.meter.beatsPerMeasure * this.countsPerBeat * this.tempoMil;
                 let duration = beatsToNext*this.countsPerBeat*this.tempoMil;
                 diagram.update(currentChord, fadeIn, duration)
-
-                //play chord
             }
             //count down until countIn is falsy
             this.countIn--;
@@ -777,13 +778,15 @@ let timer = {
                 diagram.update(nextChord, fadeIn, duration);
 
                 //play chord
+                audio.play(currentChord);
 
                 //update GUI
+                this.matchGUItoChordAlt()
             }
             //either way, move to the next beat
             this.currentPos.increment();
             if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
-                stop();
+                this.stop();
             }
         }//end of 'if countIn' block
     },//end of altStep function
@@ -881,6 +884,20 @@ let timer = {
         }
     },
 
+    matchGUItoChordAlt() {
+        for (let obj of document.querySelectorAll('.current-chord-gui')) {
+            obj.classList.remove('current-chord-gui');
+        }
+        let chord = document.querySelector(`#section-${this.currentPos.sectionName}`)
+            .querySelectorAll(`.gui-line`)[this.currentPos.lineIndex]
+            .querySelectorAll(`.gui-measure`)[this.currentPos.measureIndex]
+            .querySelectorAll(`.gui-beat`)[this.currentPos.beatIndex]
+            .querySelectorAll('.gui-chord')[0];
+        if (chord) {
+            chord.classList.add('current-chord-gui');
+        }
+    },
+
     matchGUItoChord(beat) {
         //let beatIndex = 0;
         //let lineIndex = 0;
@@ -890,7 +907,7 @@ let timer = {
             //console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
             if (this.beatIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
                     .childNodes[this.lineIndex]
-                    .querySelectorAll('.drag-chord').length) {
+                    .querySelectorAll('.gui-chord').length) {
                 this.beatIndex = 0;
                 this.lineIndex++;
                 if (this.lineIndex >= song.components[song.singleStruct[this.sectionIndex]].length) {
@@ -910,11 +927,11 @@ let timer = {
         this.currentGUIel =
             document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
                 .childNodes[this.lineIndex]
-                .querySelectorAll('.drag-chord')[this.beatIndex];
+                .querySelectorAll('.gui-chord')[this.beatIndex];
         
         this.currentGUIel.classList.add('current-chord-gui');
         //console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
-        //    .querySelectorAll('.drag-chord')[this.beatIndex]);
+        //    .querySelectorAll('.gui-chord')[this.beatIndex]);
 
         this.beatIndex++;
     },
@@ -1132,15 +1149,15 @@ let editorGUI = {
             sort:true,
         }));
         //spacer menu
-        this.dragBoxes.push(new Sortable(document.querySelector('#spacer-menu'), {
-            group: {
-                name: 'editor',
-                pull: 'clone',
-                put: false,
-                revertClone: true
-            },
-            scroll: false,
-        }));
+        // this.dragBoxes.push(new Sortable(document.querySelector('#spacer-menu'), {
+        //     group: {
+        //         name: 'editor',
+        //         pull: 'clone',
+        //         put: false,
+        //         revertClone: true
+        //     },
+        //     scroll: false,
+        // }));
         //trash
         this.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
             group: {
@@ -1164,9 +1181,10 @@ let editorGUI = {
 
     //do this after loading song data
     GUIfromSong: function() {
-        //d3: instantiate GUI elements
+        //d3: clear out any previous GUI elements
         d3.selectAll('.section').remove();
         d3.selectAll('.section-selector').remove();
+        d3.selectAll('.gui-chord').remove();
 
         //slightly recycled code
         ['title','key','tempo'].forEach(function(e) {
@@ -1176,12 +1194,11 @@ let editorGUI = {
         document.querySelector('#pattern').value = song.singleStruct.join(',');
         document.querySelector('#repeat-pattern').value = song.repeatStruct.join(',');
         
-
         //add chords in library to chord menu
         let chordMenu = d3.select('#chord-menu')
         for (let chord in song.chordLibrary) {
             chordMenu.append('span')
-                .attr('class', 'drag-chord')
+                .attr('class', 'gui-chord')
                 .html(textToSymbol(chord));
         }
 
@@ -1206,45 +1223,49 @@ let editorGUI = {
                 .attr('id', 'section-' + section)
                 .attr('class', 'section')
             //loop through lines in section
-            for (let i = 0; i < song.components[section].length; i++) {
-                let line = song.components[section][i];
+            console.log(section);
+            console.log(song.components[section]);
+            song.components[section].forEach(function(line) {
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
                     .attr('class', 'gui-line')
                 //loop through measures in line
-                for (let j = 0; j < line.length; j++) {
-                    let measure = line[j];
+                line.forEach(function(measure) {
                     //check to see whether there are multiple components;
                     //  true if multiple, false if only one
-                    let components = (
-                        measure.filter(String).length > 1 ||
-                        (measure.filter(String).length == 1 &&
-                            !measure[0])
-                    );
+                    let measureBox = lineBox.append('span')
+                        .attr('class', 'gui-measure')
                     //create chords and spacers
-                    for (let k = 0; k < measure.length; k++) {
-                        let component = measure[k];
-                        if (component) {
-                            lineBox.append('span')
-                                .attr('class', 'drag-chord')
-                                .html(textToSymbol(component));
-                        } else if (components) {
-                            lineBox.append('span')
-                                .attr('class', 'spacer-dot');
+                    for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
+                        let beatBox = measureBox.append('span')
+                            .attr('class', 'gui-beat')
+                        //beatBox.append('div')
+                        //    .attr('class', 'gui-spacer');
+                        let chord = measure[i];
+                        if (chord) {
+                            beatBox.append('span')
+                                .attr('class', 'gui-chord')
+                                .html(textToSymbol(chord));
                         }
                     }
-                    //add a measure bar to the end of the line
-                    lineBox.append('span')
-                        .attr('class', 'spacer-bar');
-                }//end of measure loop
-            }//end of line loop
-        }//end of section loop
+                    // measure.forEach(function(beat, index) {
+                    //     if (beat) {
+                    //         measureBox.append('span')
+                    //             .attr('class', 'gui-chord')
+                    //             .html(textToSymbol(beat));
+                    //     }
+                    // })
+                });//end of measure loop
+            });//end of line loop
+        };//end of section loop
 
         //select the line divs, make their components draggable
-        for (let e of document.querySelectorAll('.gui-line')) {
+        for (let e of document.querySelectorAll('.gui-beat')) {
             this.dragBoxes.push(new Sortable(e, {
                 group: 'editor',
                 animation: 500,
+                draggable: '.gui-chord',
+
                 ghostClass: 'sort-ghost',
                 chosenClass: 'sort-select',
                 dragClass: 'sort-drag',
@@ -1327,7 +1348,7 @@ function GUItoText() {
                 let className = component.className;
                 text+= (function() {
                     switch (className) {
-                        case 'drag-chord':
+                        case 'gui-chord':
                             //this contains the name of the chord
                             return textToSymbol(component.innerHTML, true);
                         case 'spacer-dot':

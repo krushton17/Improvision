@@ -397,9 +397,10 @@ input[type=range] {
     text-align: center;
 
     @extend %border;
+    padding: $grid-gap 0;
 
     @extend %grid;
-    grid-template-rows: auto 1fr auto auto;
+    grid-template-rows: 1fr auto;
 }
 #chord-menu {
     overflow-y: scroll;
@@ -408,13 +409,12 @@ input[type=range] {
     grid-template-rows: 1fr;
 }
 #chord-menu > * {
-    // uses grid-gap instead of vertical margin
-    margin: 0 auto;
+    margin: 0 $grid-gap;
 }
-#spacer-menu > * {
-    display: inline-block;
-    vertical-align: middle;
-}
+// #spacer-menu > * {
+//     display: inline-block;
+//     vertical-align: middle;
+// }
 #trash {
     height: 50;
     margin: auto;
@@ -470,31 +470,88 @@ input[type=range] {
 }
 .section {
     display: none;
+    margin: $grid-gap/2 $grid-gap;
 }
 /*gui drag zones and child elements*/
 .gui-line {
+    display: block;
     width: max-content;
+
+    // border: 2px solid white;
 }
-.gui-line > * {
+.gui-measure {
     display: inline-block;
-    vertical-align: middle;
+    
+    @extend %border;
+    margin: $grid-gap $grid-gap/2;
+    padding: 0 $grid-gap/2;
+    // vertical-align: middle;
 }
-.drag-chord, .spacer-bar, .spacer-dot {
+.gui-beat {
+    display: inline-block;
+    min-width: $input-height/2;
+    height: $input-height;
+
+    // @extend %border;
+    // border-left: 1px solid white;
+    // border-right: 1px solid lightseagreen;
+    padding: $grid-gap $grid-gap/2;
+    // padding: $grid-gap;
+    vertical-align: middle;
+
+    position: relative;
+}
+.gui-beat:after {
+    // width: 1rem;
+    // height: $input-height/4;
+    @extend %border;
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    z-index: 1;
+    // vertical-align: middle;
+    // transform: translateY(50%);
+    padding: $input-height/8 $input-height/8;
+}
+.gui-beat > .gui-chord {
+    // min-width: $input-height/2;
+    // display: block;
+    // width: max-content;
+    // vertical-align: middle;
+    z-index: 2;
+    position: relative;
+    // transform: translateY(-62.5%);
+}
+.gui-spacer {
+    width: 1em;
+    height: $input-height/2;
+    @extend %border;
+    position: relative;
+    // top: 0; bottom: 0;
+    // margin: auto;
+    // transform: translateY(32.5%);
+    z-index: 1;
+    // vertical-align: middle;
+    // display: inline-block;
+}
+.gui-chord, .spacer-bar, .spacer-dot {
     cursor: move;
-    margin: .5em;
+    // margin: .5em;
+    display: block;
 
     @extend %border;
 }
-.drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
+.gui-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
     background-color: $button-hover-color;
 }
-.drag-chord {
+.gui-chord {
     background-color: $button-bg-color;
     color: $button-text-color;
 
     height: $input-height;
     box-sizing: border-box;
-    // different from button because the font size is different; maybe replace with button height and a readjusted padding?
     padding: $button-padding;
 }
 .spacer-bar, .spacer-dot {
