@@ -1,4 +1,4 @@
-//CHORDS & NOTES-------------------------------------------------------------------------------------------------------
+//CHORDS & NOTES---------------------------------------
 
 let sharpKeys = ['C', 'C#', 'D', 'E', 'F#', 'G', 'A', 'B'];
 
@@ -164,9 +164,7 @@ class Chord {
                 for (let interval of this.notes) {
                     //note = absolute number value of the note played by that fret
                     //!use the normalize function?
-                    let note = openNote + fret;
-                    //keep note value between 0:11
-                    note %= 12;
+                    let note = (openNote + fret) % 12;
                     //convert interval name to number
                     let intNum = encodeInterval(interval);
                     //convert interval to absolute note by adding to the root
@@ -189,7 +187,7 @@ class Chord {
     }//end of notesRel function
 }//end of Chord class definition
 
-//NOTE ENCODING & PARSING----------------------------------------------------------------------------------------------
+//NOTE ENCODING & PARSING-------------------------------------
 
 //get a note number from a letter name
 let encodeNote = function(str) {
@@ -238,10 +236,7 @@ let encodeIntervals = function(array) {
 
 //convert from relative notes to absolute notes
 let normalize = function(chord, root) {
-    return chord.map(note => {
-        note += encodeNote(root);
-        note %= 12;
-    });
+    return chord.map(note => (note += encodeNote(root)) % 12);
 }
 
 //SONG CLASS DEF--------------------------------------------
@@ -269,14 +264,15 @@ class Song {
                 //swing: swing
             };
         })();//end of meter parsing
+
         this.singleStruct = /;.*;/.exec(text)[0].slice(1,-1).split(',');
         this.repeatStruct = /:.*:/.exec(text)[0].slice(1,-1).split(',');
+        
         //create empty variables to store iteration results
         this.components = {};
         //iterate through sections, then through the chords, etc.
         let sections = {};
         //extract the text strings representing each section
-        //!!for some reason, trying to match more than one letter with + or * produces an error...
         let sectionText = text.match(/\w+\[[^\[\]]+\]/g);
         //loop through the sections and parse their components
         for (let string of sectionText) {
@@ -299,9 +295,7 @@ class Song {
                     //  chords can also be separated by spaces if there is not a spacer between them!
                     let beats = measure.match(/[^ \.]+|\./g)
                     //if there are no matches, create an empty array
-                    if (!beats) {
-                        beats = [];
-                    }
+                    if (!beats) {  beats = []; }
                     //if there is too much information in the measure, generate an error message
                     if (beats.length > this.meter.beatsPerMeasure) {
                         console.log('This measure was truncated because it was too long!')
@@ -324,24 +318,9 @@ class Song {
             //for the timer
             sections[label] = chordSeq;
         }
-        //generate raw chord sequences by beat for single-play and repeat modes
-        this.singleSeq = this.constructSequence(this.singleStruct, sections);
-        this.repeatSeq = this.constructSequence(this.repeatStruct, sections);
         //generate a library of all unique chords and their intervals
         this.chordLibrary = this.constructChordLib(sections);
     }//end of constructor
-
-    constructSequence(sectionOrder, sections) {
-        let constructedSeq = [];
-        for (let i = 0; i < sectionOrder.length; i++) {
-            let section = sections[sectionOrder[i]];
-            if (!section) continue;
-            for (let chordSeq of section) {
-                constructedSeq.push(chordSeq);
-            }
-        }
-        return constructedSeq;
-    }//end of chord sequence constructor
 
     constructChordLib(sections) {
         let chordLibrary = {}
@@ -368,7 +347,7 @@ class Song {
     }//end of chord library constructor
 }//end of Song class declaration
 
-//DIAGRAM STUFF-------------------------------------------------------------------------------------------------------
+//DIAGRAM STUFF----------------------------------------------
 
 //instrument specs
 let instrument = {
@@ -626,7 +605,7 @@ let diagram = {
 //initialize diagram
 diagram.setup();
 
-//TIMING------------------------------------------------------------------------------------------------------------
+//TIMING-------------------------------------------------------------
 
 class SongNav {
     get section() {
@@ -640,7 +619,6 @@ class SongNav {
     get chord() { return this.measure[this.beatIndex]; }
 
     //!!cleaner to have an index object with properties named 'section', 'line', etc.?
-
     constructor(previous) {
         this.sectionIndex = previous ? previous.sectionIndex : 0;
         this.lineIndex = previous ? previous.lineIndex : 0;
@@ -652,8 +630,6 @@ class SongNav {
 
     increment(nextChord=false) {
         let steps = 0;
-        //closure
-        //return function(steps=0) {
         do {
             if (++this.beatIndex >= this.measure.length) {
                 this.beatIndex = 0;
@@ -670,7 +646,7 @@ class SongNav {
                     }
                 }
             }
-            //count the number of times the do block is executed
+            //count the number of times the do block is executed, e.g. the number of beats before the next chord change
             steps++;
         }
         //repeat the do block if the nextChord parameter is true and if we have yet to find a chord
@@ -686,7 +662,6 @@ let timer = {
     repeat: true,
     //find out how many counts per beat
     get countsPerBeat() {
-        //!!pull this from the input
         //if the time signature is in 8ths, 1 count per beat is enough
         //  otherwise 3 or 4, depending on whether swing == true
         return song.meter.beatUnits == 8 || this.swing ? 3 : 4;
@@ -695,53 +670,8 @@ let timer = {
     get tempoMil() {
         return 60000/((+document.getElementById('tempo').value)*this.countsPerBeat);
     },
-    //!!change this to MIDI so it syncs better, etc.
-    get metronome() {
-        return new Audio('click.mp3');
-    },
 
-    //reset everything to zero; for use by the stop button
-    //!!create partial reset for pause
-    //!!will need to set the countIn relative to
-    //  the beginning of the current measure for pause
-    reset: function(hard=false) {
-        this.countIn = song.meter.beatsPerMeasure;
-        // this.countIn = -1*+document.getElementById('count-in').value * this.countsPerBeat
-        this.counter = 0;
-        this.beatIndex = 0;
-
-        if (hard) {
-            this.currentPos = new SongNav;
-            //!!this should all be redundant now; no longer used
-            // this.sectionIndex = 0;
-            // this.lineIndex = 0;
-            // this.measureIndex = 0;
-        } else {
-            this.currentPos.beatIndex = 0;
-        }
-        this.currentGUIel = {};
-        //remove any existing note sets
-        //!!should be redunant now (why?)
-        d3.selectAll('.note-set').remove();
-    },//end of reset function
-
-    get structure() {
-        return this.repeat ? song.repeatStruct : song.singleStruct;
-    },
-    get section() {
-        return song.components[this.structure[this.sectionIndex]];
-    },
-    get line() {
-        return this.section[this.lineIndex];
-    },
-    get measure() {
-        return this.line[this.measureIndex];
-    },
-    get beat() {
-        return this.measure[this.beatIndex];
-    },
-
-    altStep: function() {
+    step: function() {
         //increment counter and see if we're at a beat change
         if (this.counter++ % this.countsPerBeat != 0) { return; }
         //equivalent to resetting it to 0 and then incrementing it
@@ -781,7 +711,7 @@ let timer = {
                 audio.play(currentChord);
 
                 //update GUI
-                this.matchGUItoChordAlt()
+                this.matchGUItoChord()
             }
             //either way, move to the next beat
             this.currentPos.increment();
@@ -789,102 +719,9 @@ let timer = {
                 this.stop();
             }
         }//end of 'if countIn' block
-    },//end of altStep function
+    },//end of step function
     
-    //increment the counter and update the diagram
-    step: function() {
-
-        //update the marquis textbox
-        this.marquis();
-        //if it's a fraction of a beat, increment and skip to the next count
-        if (this.counter % this.countsPerBeat != 0) {
-            return ++this.counter;
-        }
-
-        //!add a way to choose which sequence to use
-        let sequence = song.singleSeq;
-
-        //get the beat number from the counter
-        let beat = this.counter/this.countsPerBeat;
-
-        //if there isn't a chord change on the current beat
-        //  the second expression here solves the problem of
-        //  skipping the first chord
-        if (!sequence[beat] && this.counter != this.countIn) {
-            return ++this.counter;
-        }
-
-        //I don't currently use this, but it may be useful
-        //  for when I add MIDI accompaniment
-        let currentChord = song.chordLibrary[sequence[beat]];
-        //supposed to play the chord
-        if (currentChord) {
-            audio.play(currentChord);
-        }
-        
-        //look for the next chord to start the fade-in
-        let nextIndex = this.findNextChord(sequence, beat);
-        let nextChord = song.chordLibrary[sequence[nextIndex]];
-        let beatsToNext = nextIndex - beat;
-        beatsToNext %= sequence.length;
-        //if (beatsToNext < 0) {
-        //    beatsToNext += sequence.length;
-        //}
-
-        //look for the following chord to set the timeout
-        let nextNextIndex = this.findNextChord(sequence, nextIndex);
-        let nextDuration = nextNextIndex - nextIndex;
-        nextDuration %= sequence.length;
-        //if (nextDuration < 0) {
-        //    nextDuration += sequence.length;
-        //}
-
-        //calculate the fade-in and timeout and update the diagram with them
-        let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
-        let duration = nextDuration*this.countsPerBeat*this.tempoMil;
-        diagram.update(nextChord, fadeIn, duration);
-        
-        //increment counter
-        this.counter++;
-
-        let clear = document.querySelectorAll('.current-chord-gui');
-        //console.log(clear.classList);
-        for (let obj of clear) {
-            obj.classList.remove('current-chord-gui');
-        }
-        this.matchGUItoChord(beat);
-        /*
-        //highlight the current chord in the GUI
-        if (typeof this.nextGUIel != 'undefined') {
-            d3.selectAll('.current-chord-gui').classed('current-chord-gui', false);
-            this.nextGUIel.classed('current-chord-gui', true); 
-        }
-        //queue the GUI element that matches the next chord
-        this.nextGUIel = d3.select(`#section-${song.structure[this.sectionIndex]}`)
-            .select(`#chord-${this.beatIndex}`);
-        
-        //advance component from next to current
-        this.prevComponent = currentGUIel;
-        */
-    },//end of repeat function
-
-    //!!should be deprecated now
-    //scan ahead in the chord sequence for the next chord change
-    findNextChord(sequence, beat) {
-        for (let i = 1; i < sequence.length; i++) {
-            //check each beat until a chord is found
-            nextIndex = i + beat;
-            //!!add branching for repeat vs. single play
-            //!!^ shouldn't be necessary now
-            nextIndex%=sequence.length
-            //once the chord is found, break out of the loop
-            if (sequence[nextIndex]) {
-                return nextIndex;
-            }
-        }
-    },
-
-    matchGUItoChordAlt() {
+    matchGUItoChord() {
         for (let obj of document.querySelectorAll('.current-chord-gui')) {
             obj.classList.remove('current-chord-gui');
         }
@@ -896,44 +733,6 @@ let timer = {
         if (chord) {
             chord.classList.add('current-chord-gui');
         }
-    },
-
-    matchGUItoChord(beat) {
-        //let beatIndex = 0;
-        //let lineIndex = 0;
-        //let sectionIndex = 0;
-        if (beat < 0) {return;}
-        //for (let i = 0; i < beat; i++) {
-            //console.log(song.components[song.singleStruct[this.sectionIndex]][this.lineIndex])
-            if (this.beatIndex >= document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
-                    .childNodes[this.lineIndex]
-                    .querySelectorAll('.gui-chord').length) {
-                this.beatIndex = 0;
-                this.lineIndex++;
-                if (this.lineIndex >= song.components[song.singleStruct[this.sectionIndex]].length) {
-                    this.lineIndex = 0;
-                    this.sectionIndex++;
-                    //add branching for repeat/single play modes
-                    if (this.sectionIndex >= song.singleStruct.length) {
-                        this.sectionIndex = 0;
-                    }
-                }
-            }
-        //}
-        //not sure I need this
-        //this.prevComponent = this.currentGUIel;
-        //!!make a separate function for looping through the GUI elements
-        //  to be reused to convert GUI to text
-        this.currentGUIel =
-            document.querySelector('#section-' + song.singleStruct[this.sectionIndex])
-                .childNodes[this.lineIndex]
-                .querySelectorAll('.gui-chord')[this.beatIndex];
-        
-        this.currentGUIel.classList.add('current-chord-gui');
-        //console.log(document.querySelector('#section-' + song.singleStruct[this.sectionIndex]).childNodes[this.lineIndex]
-        //    .querySelectorAll('.gui-chord')[this.beatIndex]);
-
-        this.beatIndex++;
     },
     
     //display the count in a textbox; play sound on downbeats
@@ -973,53 +772,57 @@ let timer = {
     },//end of marquis function
 
     paused: true,
-    //the actual reference to the interval object
-    //!!separate pause and stop
-    beat: undefined,
-    playPause: function() {
-        if (this.paused) {
-            this.paused = false;
-            // playBtn.value = '\u{25AE}\u{25AE}';
-            playBtn.style.display = 'none';
-            pauseBtn.style.display = 'inline-block';
-            //set timer, and convert bpm to milliseconds:
-            this.reset(true);
-            this.beat = setInterval(this.altStep.bind(this), this.tempoMil);
+    play: function(stop=false) {
+        playBtn.style.display = 'none';
+        pauseBtn.style.display = 'inline-block';
+
+        //this is recycled...is there a reason I don't just do this in one line?
+        let clear = document.querySelectorAll('.current-chord-gui');
+        for (let obj of clear) {
+            obj.classList.remove('current-chord-gui');
+        }
+        
+        //
+        d3.selectAll('.note-set').remove();   
+        //set timer, and convert bpm to milliseconds:
+        this.beat = setInterval(this.step.bind(this), this.tempoMil);
+    },//end of play function
+
+    //reset everything to zero; for use by the stop and pause buttons
+    reset: function(hard=false) {
+        this.countIn = song.meter.beatsPerMeasure;
+        this.counter = 0;
+        //this.beatIndex = 0;
+
+        //this.paused = true;
+        pauseBtn.style.display = 'none';
+        playBtn.style.display = 'inline-block';
+
+        if (hard) {
+            this.currentPos = new SongNav;
+            d3.selectAll('.note-set').remove();   
+            //this is recycled...is there a reason I don't just do this in one line?
+            let clear = document.querySelectorAll('.current-chord-gui');
+            for (let obj of clear) {
+                obj.classList.remove('current-chord-gui');
+            }
         } else {
-            this.paused = true;
-
-            pauseBtn.style.display = 'none';
-            playBtn.style.display = 'inline-block';
-
-            audio.stop();
-            // playBtn.value = '\u{25B6}';
-            //this doesn't stop animations that have already started...
-            clearInterval(this.beat);
-            //this does
-            //select all noteSets
+            this.currentPos.beatIndex = 0;
             d3.selectAll('.note-set')
                 //cancel current and pending animations
                 .interrupt()
                 //make semitransparent notes disappear
-                //!replace this with a remove() function?
+                //!!replace this with a remove() function?
                 .style('opacity', function() {
                     if (d3.select(this).style('opacity') < 1) {
                         return 0;
                     }
                 });
         }
-    },//end of playPause function
-    stop: function() {
-        this.paused = true;
-        this.reset(true);
-
-        pauseBtn.style.display = 'none';
-        playBtn.style.display = 'inline-block';
-
         audio.stop();
-        clearInterval(this.beat);
-        d3.selectAll('.note-set').remove();
-    },
+        if (this.beat) { clearInterval(this.beat); }
+        //this.currentGUIel = {};
+    },//end of reset function
 }//end of timer definition
 /*
 //function to make outgoing notes flash
@@ -1045,28 +848,14 @@ let flash = function() {
 
 //add event listener to play/pause buttons
 let playBtn = document.getElementById('play');
-playBtn.addEventListener('click', timer.playPause.bind(timer));
+playBtn.addEventListener('click', timer.play.bind(timer));
 let pauseBtn = document.getElementById('pause');
-pauseBtn.addEventListener('click', timer.playPause.bind(timer));
+pauseBtn.addEventListener('click', timer.reset.bind(timer, false));
+document.querySelector('#stop').addEventListener('click', timer.reset.bind(timer, true));
 
-//FILE HANDLING------------------------------------------------------------------------------------------
-
-// let contents = `(Summertime,Am,60,4/4,swing)
-// ;A,B,C;
-// :A,B:
-// A[Am7|Bbm7|Bm7.BM7.|Cm7.CM7.|
-// C#m7|Dm7|D#m7.D#M7.|E7|
-// Fm7|F#7|G7|G#7|
-// CM7.Am7.|D7.E7.|]
-// B[Am7.D7.|Bm7.E7.|]
-// C[Am7||]`;
-
-// let song = new Song(contents);
-
-// document.getElementById('text-editor').value = contents;
+//FILE HANDLING--------------------------------------------------
 
 //file handling
-//!!reintroduce automatically uploading the example file on page load
 function loadFile(local, e=null) {
     let file;
     if (local) {
@@ -1090,6 +879,7 @@ function readFile (file) {
         song = new Song(contents);
         editorGUI.setup();
         editorGUI.GUIfromSong();
+        timer.reset(true);
     }
     reader.readAsText(file);
 }
@@ -1101,6 +891,7 @@ uploadButton.addEventListener('change', loadFile.bind(null, true), false);
 let uploadDiv = document.querySelector('#upload-label');
 uploadDiv.addEventListener('click', function() {uploadButton.click(); })
 
+//download
 function download(text, filename) {
     var file = new Blob([text], {type: 'text/plain'});
     if (window.navigator.msSaveOrOpenBlob) // IE10+
@@ -1119,11 +910,11 @@ function download(text, filename) {
         }, 0); 
     }
 }
-
-let downloadDiv = document.querySelector('#download');
-downloadDiv.addEventListener('click', function() {download(document.getElementById('text-editor').value, song.title + '.music'); });
+//attach download function to button
+document.querySelector('#download').addEventListener('click', function() {download(document.getElementById('text-editor').value, song.title + '.music'); });
 
 let editorGUI = {
+    //store all Sortable objects
     dragBoxes: [],
     //do this on startup
     setup: function() {
@@ -1133,13 +924,9 @@ let editorGUI = {
                 name: 'editor',
                 pull: 'clone',
                 put: function(to, from, dragged) {
-                    //can't put spacers in the chord menu
-                    if (dragged.innerHTML == '') {return false;}
-                    //cycle through the chords listed in the chord menu
-                    for (let i = 0; i < to.el.children.length; i++) {
-                        if (to.el.children[i].innerHTML == dragged.innerHTML) {
-                            return false;
-                        }
+                    //prevent duplicate chords in chord menu
+                    for (let e of to.el.children) {
+                        if (e.innerHTML == dragged.innerHTML) { return false; }
                     }
                     return true;
                 },
@@ -1148,16 +935,6 @@ let editorGUI = {
             scroll: true,
             sort:true,
         }));
-        //spacer menu
-        // this.dragBoxes.push(new Sortable(document.querySelector('#spacer-menu'), {
-        //     group: {
-        //         name: 'editor',
-        //         pull: 'clone',
-        //         put: false,
-        //         revertClone: true
-        //     },
-        //     scroll: false,
-        // }));
         //trash
         this.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
             group: {
@@ -1186,7 +963,7 @@ let editorGUI = {
         d3.selectAll('.section-selector').remove();
         d3.selectAll('.gui-chord').remove();
 
-        //slightly recycled code
+        //header
         ['title','key','tempo'].forEach(function(e) {
             document.querySelector(`#${e}`).value = song[e];
         });
@@ -1194,7 +971,7 @@ let editorGUI = {
         document.querySelector('#pattern').value = song.singleStruct.join(',');
         document.querySelector('#repeat-pattern').value = song.repeatStruct.join(',');
         
-        //add chords in library to chord menu
+        //chord menu
         let chordMenu = d3.select('#chord-menu')
         for (let chord in song.chordLibrary) {
             chordMenu.append('span')
@@ -1223,24 +1000,19 @@ let editorGUI = {
                 .attr('id', 'section-' + section)
                 .attr('class', 'section')
             //loop through lines in section
-            console.log(section);
-            console.log(song.components[section]);
             song.components[section].forEach(function(line) {
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
                     .attr('class', 'gui-line')
                 //loop through measures in line
                 line.forEach(function(measure) {
-                    //check to see whether there are multiple components;
-                    //  true if multiple, false if only one
                     let measureBox = lineBox.append('span')
                         .attr('class', 'gui-measure')
-                    //create chords and spacers
+                    //loop through beats in measure
                     for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
                         let beatBox = measureBox.append('span')
                             .attr('class', 'gui-beat')
-                        //beatBox.append('div')
-                        //    .attr('class', 'gui-spacer');
+                        //add chord if there is one
                         let chord = measure[i];
                         if (chord) {
                             beatBox.append('span')
@@ -1248,13 +1020,6 @@ let editorGUI = {
                                 .html(textToSymbol(chord));
                         }
                     }
-                    // measure.forEach(function(beat, index) {
-                    //     if (beat) {
-                    //         measureBox.append('span')
-                    //             .attr('class', 'gui-chord')
-                    //             .html(textToSymbol(beat));
-                    //     }
-                    // })
                 });//end of measure loop
             });//end of line loop
         };//end of section loop
@@ -1293,8 +1058,6 @@ function tabChange(evt, tabID) {
 
 //initialize drag-drop interface
 editorGUI.setup();
-//!!placeholder until this becomes part of song loading procedure
-//editorGUI.GUIfromSong();
 
 //show/hide gui vs text editor
 //!!may not be any point in hiding either if the screen is big
@@ -1586,3 +1349,5 @@ input.addEventListener('keyup', function(e) {
         button.click();
     }});
 */
+
+
