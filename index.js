@@ -236,7 +236,7 @@ let encodeIntervals = function(array) {
 
 //convert from relative notes to absolute notes
 let normalize = function(chord, root) {
-    return chord.map(note => (note += encodeNote(root)) % 12);
+    return chord.map(note => (note += enfcodeNote(root)) % 12);
 }
 
 //SONG CLASS DEF--------------------------------------------
@@ -983,13 +983,13 @@ let editorGUI = {
         for (let section of Object.keys(song.components).sort()) {
             
             //tab selector button
-            d3.select('#section-selectors').append('input')
-                .attr('type', 'button')
+            d3.select('#section-selectors').append('div')
                 .attr('id', 'section-selector-' + section)
-                .attr('class', 'section-selector')
-                .attr('value', section)
+                .attr('class', 'section-selector button')
+                .html(section)
                 //!!add (right-click || touch-and-hold) event to edit
                 .attr('onclick', `tabChange(event, 'section-${section}')`);
+            //divider, since I'm using flexbox instead of grid here
             d3.select('#section-selectors').append('div')
                 .attr('class', 'section-selector')
                 //magic number .5rem = $grid-gap
@@ -1004,10 +1004,19 @@ let editorGUI = {
                 //add a sortable div for each line in the section
                 let lineBox = sectionDiv.append('div')
                     .attr('class', 'gui-line')
+                lineBox.append('span')
+                    .attr('class', 'gui-handle')
+                    .html('\u{2195}');
+                lineBox.append('span')
+                    .attr('class', 'gui-add-measure')
+                    .html('+');
                 //loop through measures in line
                 line.forEach(function(measure) {
                     let measureBox = lineBox.append('span')
                         .attr('class', 'gui-measure')
+                    measureBox.append('span')
+                        .attr('class', 'gui-handle')
+                        .html('\u{2195}');
                     //loop through beats in measure
                     for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
                         let beatBox = measureBox.append('span')
@@ -1022,6 +1031,9 @@ let editorGUI = {
                     }
                 });//end of measure loop
             });//end of line loop
+            sectionDiv.append('span')
+                .attr('class', 'gui-add-line')
+                .html('+');
         };//end of section loop
 
         //select the line divs, make their components draggable
@@ -1030,6 +1042,7 @@ let editorGUI = {
                 group: 'editor',
                 animation: 500,
                 draggable: '.gui-chord',
+                // disabled: '.gui-disabled',
 
                 ghostClass: 'sort-ghost',
                 chosenClass: 'sort-select',
@@ -1039,8 +1052,50 @@ let editorGUI = {
         }
         //select the first section as if the button had been clicked
         document.querySelector('#section-selector-' + Object.keys(song.components).sort()[0]).click();
+
+        //make chords and section names editable
+        //!!consolidate the fuck out of this bro
+        document.querySelectorAll('.gui-chord').forEach(function(el) {
+            el.addEventListener('dblclick', makeEditable.bind(null, true));
+        });
+        document.querySelectorAll('.section-selector').forEach(function(el) {
+            el.addEventListener('dblclick', makeEditable.bind(null, false));
+        });
+
+        document.querySelectorAll('.gui-chord').forEach(function(el) {
+            el.addEventListener('keydown', notEditable.bind(null, true));
+        });
+        document.querySelectorAll('.section-selector').forEach(function(el) {
+            el.addEventListener('keydown', notEditable.bind(null, false));
+        });
+
+        document.querySelectorAll('.gui-chord').forEach(function(el) {
+            el.addEventListener('blur', notEditable.bind(null, true));
+        });
+        document.querySelectorAll('.section-selector').forEach(function(el) {
+            el.addEventListener('blur', notEditable.bind(null, false));
+        });
+
+
     }//end of GUIfromSong function
 }//end of editorGUI declaration
+
+function makeEditable(symbols = false, evt) {
+    console.log(evt)
+    console.log(symbols)
+    if (symbols) {
+        evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, true);
+    }
+    evt.currentTarget.contentEditable = 'true';
+    evt.currentTarget.focus();
+}
+function notEditable(symbols = false, evt) {
+    if (evt.key && !['Enter', 'Escape'].includes(evt.key)) { return; }
+    if (symbols) {
+        evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, false);
+    }
+    evt.currentTarget.contentEditable = 'false';
+}
 
 //make the buttons bring up the tab content for each section
 function tabChange(evt, tabID) {
@@ -1052,7 +1107,7 @@ function tabChange(evt, tabID) {
     tablinks = document.getElementsByClassName("tab");
     d3.selectAll('.section-selector').classed('active', false);
     
-    document.getElementById(tabID).style.display = "block";
+    document.getElementById(tabID).style.display = "flex";
     evt.currentTarget.className += " active";
 }
 
