@@ -918,10 +918,11 @@ let editorGUI = {
     dragBoxes: [],
     //do this on startup
     setup: function() {
+        //these elements are unique enough to not bother with the condensed 'newSortable' function
         //chord menu
         this.dragBoxes.push(new Sortable(document.querySelector('#chord-menu'), {
             group: {
-                name: 'editor',
+                name: 'chords',
                 pull: 'clone',
                 put: function(to, from, dragged) {
                     //prevent duplicate chords in chord menu
@@ -936,17 +937,19 @@ let editorGUI = {
             sort:true,
         }));
         //trash
-        this.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
-            group: {
-                name: 'editor',
-                pull: false,
-                put: true
-            },
-            onAdd: function(evt) {
-                evt.item.parentNode.removeChild(evt.item);
-            },
-            scroll: false,
-        }));
+        ['measures', 'chords', 'lines', 'section-selectors'].forEach(function(groupName) {
+            editorGUI.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
+                group: {
+                    name: groupName,
+                    pull: false,
+                    put: true
+                },
+                onAdd: function(evt) {
+                    evt.item.parentNode.removeChild(evt.item);
+                },
+                scroll: false,
+            }));
+        });
         //options common to all of the above
         for (let e of this.dragBoxes) {
             e.option('animation', 500);
@@ -987,13 +990,7 @@ let editorGUI = {
                 .attr('id', 'section-selector-' + section)
                 .attr('class', 'section-selector button')
                 .html(section)
-                //!!add (right-click || touch-and-hold) event to edit
                 .attr('onclick', `tabChange(event, 'section-${section}')`);
-            //divider, since I'm using flexbox instead of grid here
-            d3.select('#section-selectors').append('div')
-                .attr('class', 'section-selector')
-                //magic number .5rem = $grid-gap
-                .style('width', '.5rem');
             
             //tab content
             let sectionDiv = d3.select('#section-wrapper').append('div')
@@ -1036,20 +1033,14 @@ let editorGUI = {
                 .html('+');
         };//end of section loop
 
-        //select the line divs, make their components draggable
-        for (let e of document.querySelectorAll('.gui-beat')) {
-            this.dragBoxes.push(new Sortable(e, {
-                group: 'editor',
-                animation: 500,
-                draggable: '.gui-chord',
-                // disabled: '.gui-disabled',
-
-                ghostClass: 'sort-ghost',
-                chosenClass: 'sort-select',
-                dragClass: 'sort-drag',
-                scroll: true,
-            }));
-        }
+        //make stuff draggable
+        newSortable(document.querySelector('#section-selectors'), 'selectors');
+        ['section', 'gui-line', 'gui-beat'].forEach(function (guiClass) {
+            for (let e of document.querySelectorAll('.' + guiClass)) {
+                newSortable(e, guiClass);
+            }
+        });
+             
         //select the first section as if the button had been clicked
         document.querySelector('#section-selector-' + Object.keys(song.components).sort()[0]).click();
 
@@ -1076,10 +1067,60 @@ let editorGUI = {
             el.addEventListener('blur', notEditable.bind(null, false));
         });
 
-
     }//end of GUIfromSong function
 }//end of editorGUI declaration
 
+function newSortable(element, type) {
+    params = (function() {
+        switch (type) {
+            case 'selectors': return {
+                group: 'selectors',
+                draggable: '.section-selector'
+            }
+            case 'section': return {
+                group: 'lines',
+                draggable: '.gui-line',
+                handle: '.gui-handle'
+            }
+            case 'gui-line': return {
+                group: 'measures',
+                draggable: '.gui-measure',
+                handle: '.gui-handle'
+            }
+            case 'gui-beat': return {
+                group: {
+                    name: 'chords',
+                    put: function(to) {
+                        //prevent adding multiple chords to one beat
+                        if (to.el.children[0]) return false;
+                        return true;
+                    },
+                    //I though this would keep a copy in the cell if you dragged it to the chord menu, but nope
+                    revertClone: true
+                },
+                draggable: '.gui-chord'
+            }
+        }
+    })();
+    let options = {
+        group: params.group,
+        animation: 500,
+        draggable: params.draggable,
+
+        ghostClass: 'sort-ghost',
+        chosenClass: 'sort-select',
+        dragClass: 'sort-drag',
+        scroll: true,
+    }
+    if (params.handle) { options['handle'] = params.handle; }
+
+    editorGUI.dragBoxes.push(new Sortable(element, options));
+}//end of newSortable function
+
+//initialize drag-drop interface
+editorGUI.setup();
+
+//allow user to edit some GUI elements' text
 function makeEditable(symbols = false, evt) {
     console.log(evt)
     console.log(symbols)
@@ -1089,6 +1130,7 @@ function makeEditable(symbols = false, evt) {
     evt.currentTarget.contentEditable = 'true';
     evt.currentTarget.focus();
 }
+//reverse the above
 function notEditable(symbols = false, evt) {
     if (evt.key && !['Enter', 'Escape'].includes(evt.key)) { return; }
     if (symbols) {
@@ -1097,44 +1139,15 @@ function notEditable(symbols = false, evt) {
     evt.currentTarget.contentEditable = 'false';
 }
 
-//make the buttons bring up the tab content for each section
+//bring up the tab content for each section
 function tabChange(evt, tabID) {
-    let tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("section");
-    for (let i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tab");
+    //style the button
     d3.selectAll('.section-selector').classed('active', false);
-    
-    document.getElementById(tabID).style.display = "flex";
     evt.currentTarget.className += " active";
+    //bring up the content
+    d3.selectAll('.section').style('display', 'none');
+    document.getElementById(tabID).style.display = "flex";
 }
-
-//initialize drag-drop interface
-editorGUI.setup();
-
-//show/hide gui vs text editor
-//!!may not be any point in hiding either if the screen is big
-function editorToggle(GUIselect) {
-    let GUIwrap = document.querySelector('#gui-wrapper');
-    let textWrap = document.querySelector('#text-wrapper');
-    let selected = GUIselect ? GUIwrap : textWrap;
-    let other = GUIselect ? textWrap : GUIwrap;
-    if (selected.className=='active-editor') {
-        selected.className='inactive-editor';
-        other.className='active-editor';
-    } else {
-        selected.className='active-editor';
-        if (window.innerWidth < 800) {
-            other.className='inactive-editor';
-        }
-    }
-}
-//anonymous functions needed to prevent these being read as IIFEs
-// document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
-// document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
-
 
 //convert GUI elements to text
 function GUItoText() {
@@ -1147,13 +1160,16 @@ function GUItoText() {
     text += `\n;${document.querySelector('#pattern').value};`;
     let repeat = document.querySelector('#repeat-pattern').value;
     if (repeat) { text += `\n:${repeat}:`; } // + ':\n'; }
-    //sections
-    for (let section of document.querySelectorAll('.section')) {
-        //start each section with a line break,
-        //  the name of the section, and an opening bracket
-        //magic number 8 = the length of 'section-',
-        //  the irrelevant part of the id name
-        text += `\n${section.id.slice(8)}[`;
+    //this will go through the sections in the order of the selector buttons, allowing the user to rearrange the sections in the gui
+    document.querySelectorAll('.section-selector').forEach(function(selector, i) {
+        //start each section with a line break, the name of the section, and an opening bracket
+        let label = selector.innerHTML;
+        text += `\n${label}[`;
+        //the id may be different from the button label, but it will still be associated with the same section content
+        //magic number 17 = the length of 'section-selector-', which is the irrelevant part of the id
+        let id = `#section-${selector.id.slice(17)}`;
+        let section = document.querySelector(id);
+        //loop through the section associated with the current selector
         section.querySelectorAll('.gui-line').forEach(function(line, i) {
             //no line break for the first line
             if (i != 0) { text += '\n'; }
@@ -1184,7 +1200,7 @@ function GUItoText() {
             }//end of measure loop
         });//end of line loop
         text += ']';
-    }//end of section loop
+    });//end of section loop
     document.querySelector('#text-editor').value = text;
     song = new Song(text);
     timer.reset(true);
@@ -1196,8 +1212,7 @@ document.querySelector('#text-to-gui').addEventListener('click', function() {
         editorGUI.GUIfromSong();    
     });
 
-
-//!!make this generalizable to other replacement functions!
+//!!make this generalizable to other replacement functions?
 function textToSymbol(str, reversed = false) {
     //add a setting to turn this off and use plain text
     let pairs = [
@@ -1218,6 +1233,35 @@ function textToSymbol(str, reversed = false) {
     })
     return str;
 }
+
+
+
+
+
+
+
+//show/hide gui vs text editor
+//!!may not be any point in hiding either if the screen is big
+function editorToggle(GUIselect) {
+    let GUIwrap = document.querySelector('#gui-wrapper');
+    let textWrap = document.querySelector('#text-wrapper');
+    let selected = GUIselect ? GUIwrap : textWrap;
+    let other = GUIselect ? textWrap : GUIwrap;
+    if (selected.className=='active-editor') {
+        selected.className='inactive-editor';
+        other.className='active-editor';
+    } else {
+        selected.className='active-editor';
+        if (window.innerWidth < 800) {
+            other.className='inactive-editor';
+        }
+    }
+}
+//anonymous functions needed to prevent these being read as IIFEs
+// document.querySelector('#toggle-gui').addEventListener('click', function(){editorToggle(true)});
+// document.querySelector('#toggle-text').addEventListener('click', function(){editorToggle(false)});
+
+
 
 // WEB AUDIO API-----------------------------------------
 //!!oscillator generation functions could certainly be more DRY... create a recyclable function for that, maybe using a closure to remember the previous oscillators created with it?

@@ -41,6 +41,7 @@ $inline-symbol-font-size: 1.5rem;
 
 $border: 1.5px solid turquoise;
 $border-radius: 5px;
+$border-color: turquoise;
 
 $grid-gap: .5rem;
 
@@ -67,8 +68,8 @@ $button-bg-color: hsl(280, 61%, 35%);
 $button-text-color: white;
 $button-text-size: 16px;
 $button-padding: .3rem .35rem;
-$button-hover-color: hotpink;
-$button-active-color: turquoise;
+$button-hover-color: lightseagreen;
+$button-active-color: hotpink;
 
 $button-symbol-font-size: 1.25rem;
 $button-symbol-margin: -.4rem 0 0 0;
@@ -87,7 +88,7 @@ $editor-bg-color: hsl(280, 30%, 15%);
 $spacer-color: black;
 $drag-ghost-color: lightgray;
 $drag-ghost-alpha: .4;
-$current-chord-color: red;
+$current-chord-color: hotpink;
 
 %grid {
     display: grid;
@@ -229,7 +230,7 @@ input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
     background-color: $button-hover-color;
     cursor: pointer;
 }
-input[type=button].active, input[type=checkbox]:checked {
+input[type=button].active, .button.active, input[type=checkbox]:checked {
     background-color: $button-active-color;
 }
 textarea, input[type=text], input[type=number] {
@@ -371,6 +372,9 @@ input[type=range] {
     background: $button-bg-color;
     @extend %border;
 }
+::-webkit-scrollbar-thumb:hover {
+    background: $button-hover-color;
+}
 // ::-webkit-scrollbar-track {
 // }
 ::-webkit-scrollbar-corner {
@@ -441,12 +445,22 @@ input[type=range] {
 #section-select {
     grid-area: sections;
 
+    margin-left: -$grid-gap/2;
+    margin-right: -$grid-gap/2;
+
     display: flex;
     flex-flow: row nowrap;
 }
 #section-selectors {
     display: flex;
     flex-flow: row nowrap;
+}
+.section-selector, #add-tab {
+    margin: 0 $grid-gap/2;
+}
+#add-tab > * {
+    //font-size: $inline-symbol-font-size;
+    margin-top: -.3rem;
 }
 #pattern {
     grid-area: pattern;
@@ -480,13 +494,15 @@ input[type=range] {
     display: block;
     width: max-content;
 
+    margin: $grid-gap/2;
+
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
 }
 .gui-measure {
     @extend %border;
-    margin: $grid-gap $grid-gap/2;
+    margin: 0 $grid-gap/2;
     padding: 0 $grid-gap/2;
     background-color: $editor-bg-color;
     // vertical-align: middle;
@@ -500,12 +516,16 @@ input[type=range] {
     color: lightseagreen;
     vertical-align: middle;
     &:hover {
-        color: $button-hover-color;
+        color: $border-color;
     }
 }
 .gui-add-line, .gui-add-measure {
     cursor: pointer;
     order: 1;
+    margin-left: $grid-gap/2; 
+}
+.gui-add-line {
+    margin-top: $grid-gap;
 }
 .gui-handle {
     padding-top: .25rem;
@@ -513,6 +533,7 @@ input[type=range] {
 }
 .gui-measure > .gui-handle {
     border-right: $border;
+    border-color: lightseagreen;
     margin-left: -.25rem;
     margin-right: .25rem;
 }
@@ -534,7 +555,10 @@ input[type=range] {
     // width: 1rem;
     // height: $input-height/4;
     @extend %border;
+    border-color: lightseagreen;
     content: '';
+    //font-size: $inline-symbol-font-size;
+    color: lightseagreen;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -543,6 +567,12 @@ input[type=range] {
     // vertical-align: middle;
     // transform: translateY(50%);
     padding: $input-height/8 $input-height/8;
+}
+.gui-beat:hover:after {
+    content: '+';
+    border:none;
+    color: $border-color;
+    font-size: $inline-symbol-font-size;
 }
 .gui-beat > .gui-chord {
     // min-width: $input-height/2;
@@ -553,29 +583,24 @@ input[type=range] {
     position: relative;
     // transform: translateY(-62.5%);
 }
-.gui-spacer {
-    width: 1em;
-    height: $input-height/2;
-    @extend %border;
-    position: relative;
-    // top: 0; bottom: 0;
-    // margin: auto;
-    // transform: translateY(32.5%);
-    z-index: 1;
-    // vertical-align: middle;
-    // display: inline-block;
-}
-.gui-chord, .spacer-bar, .spacer-dot {
+// .gui-spacer {
+//     width: 1em;
+//     height: $input-height/2;
+//     @extend %border;
+//     position: relative;
+//     // top: 0; bottom: 0;
+//     // margin: auto;
+//     // transform: translateY(32.5%);
+//     z-index: 1;
+//     // vertical-align: middle;
+//     // display: inline-block;
+// }
+.gui-chord {
     cursor: move;
-    // margin: .5em;
     display: block;
 
     @extend %border;
-}
-.gui-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
-    background-color: $button-hover-color;
-}
-.gui-chord {
+
     background-color: $button-bg-color;
     color: $button-text-color;
 
@@ -583,15 +608,18 @@ input[type=range] {
     box-sizing: border-box;
     padding: $button-padding;
 }
+.gui-chord:hover {
+    background-color: $button-hover-color;
+}
 .sort-select, .sort-drag {
-    background-color: $button-active-color;
+    //background-color: $button-active-color;
 }
 .sort-ghost {
-    background-color: $drag-ghost-color;
+    background-color: $button-hover-color;
     opacity: $drag-ghost-alpha;
 }
 .current-chord-gui {
-    border-color: $current-chord-color;
+    background-color: $current-chord-color;
 }
 
 /* text editor ---------------------------------*/
@@ -611,15 +639,11 @@ input[type=range] {
 #playback-dash {
     /* grid-area: dashboard; */
     @extend %border;
-    border-color: $auxExp-stroke;
-    padding: $grid-gap;
+    //border-color: $auxExp-stroke;
+    padding: $grid-gap 0;
 
     display: flex;
     flex-flow: row nowrap;
-    // @extend %grid;
-    // grid-template-rows: 1fr;
-    // // grid-template-columns: auto auto auto auto auto;
-    // justify-content: center;
 }
 #playback-dash > label {
     margin: auto 0;
