@@ -983,57 +983,23 @@ let editorGUI = {
         }
 
         //add tabs and tab content for each section
+        //!!consolidate all this to the newSection function!
         for (let section of Object.keys(song.components).sort()) {
-            
-            //tab selector button
-            d3.select('#section-selectors').append('div')
-                .attr('id', 'section-selector-' + section)
-                .attr('class', 'section-selector button')
-                .html(section)
-                .attr('onclick', `tabChange(event, 'section-${section}')`);
-            
-            //tab content
-            let sectionDiv = d3.select('#section-wrapper').append('div')
-                .attr('id', 'section-' + section)
-                .attr('class', 'section')
+            let sectionDiv = newSection(section);
+
             //loop through lines in section
             song.components[section].forEach(function(line) {
                 //add a sortable div for each line in the section
-                let lineBox = sectionDiv.append('div')
-                    .attr('class', 'gui-line')
-                lineBox.append('span')
-                    .attr('class', 'gui-handle')
-                    .html('\u{2195}');
-                lineBox.append('span')
-                    .attr('class', 'gui-add-measure')
-                    .html('+');
+                let lineBox = newLine(sectionDiv);
                 //loop through measures in line
                 line.forEach(function(measure) {
-                    let measureBox = lineBox.append('span')
-                        .attr('class', 'gui-measure')
-                    measureBox.append('span')
-                        .attr('class', 'gui-handle')
-                        .html('\u{2195}');
-                    //loop through beats in measure
-                    for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
-                        let beatBox = measureBox.append('span')
-                            .attr('class', 'gui-beat')
-                        //add chord if there is one
-                        let chord = measure[i];
-                        if (chord) {
-                            beatBox.append('span')
-                                .attr('class', 'gui-chord')
-                                .html(textToSymbol(chord));
-                        }
-                    }
+                    newMeasure(lineBox, measure)
                 });//end of measure loop
             });//end of line loop
-            sectionDiv.append('span')
-                .attr('class', 'gui-add-line')
-                .html('+');
         };//end of section loop
 
         //make stuff draggable
+        //!!this needs to be done in the functions that create these elements in the first place!
         newSortable(document.querySelector('#section-selectors'), 'selectors');
         ['section', 'gui-line', 'gui-beat'].forEach(function (guiClass) {
             for (let e of document.querySelectorAll('.' + guiClass)) {
@@ -1042,34 +1008,105 @@ let editorGUI = {
         });
              
         //select the first section as if the button had been clicked
-        document.querySelector('#section-selector-' + Object.keys(song.components).sort()[0]).click();
+        document.querySelector('.section-selector').click();
 
         //make chords and section names editable
-        //!!consolidate the fuck out of this bro
-        document.querySelectorAll('.gui-chord').forEach(function(el) {
-            el.addEventListener('dblclick', makeEditable.bind(null, true));
-        });
-        document.querySelectorAll('.section-selector').forEach(function(el) {
-            el.addEventListener('dblclick', makeEditable.bind(null, false));
-        });
+        //!!will need to be moved when I add the ability to add new chords on demand
+        d3.selectAll('.gui-chord')
+            .on('dblclick', function() { makeEditable(true, d3.event); })
+            .on('keydown', function() { notEditable(true, d3.event); })
+            .on('blur', function() { notEditable(true, d3.event); })
 
-        document.querySelectorAll('.gui-chord').forEach(function(el) {
-            el.addEventListener('keydown', notEditable.bind(null, true));
-        });
-        document.querySelectorAll('.section-selector').forEach(function(el) {
-            el.addEventListener('keydown', notEditable.bind(null, false));
-        });
-
-        document.querySelectorAll('.gui-chord').forEach(function(el) {
-            el.addEventListener('blur', notEditable.bind(null, true));
-        });
-        document.querySelectorAll('.section-selector').forEach(function(el) {
-            el.addEventListener('blur', notEditable.bind(null, false));
+        //make the button work to create new sections
+        d3.select('#add-tab').on('click', function(d) {
+            //just in case the user has actually used all 26 letters as section names... (unicode quarter note)
+            let label = '\u{2669}';
+            //use the first unused letter of the alphabet as the name of the new section
+            for (i = 0; i < 26; i++) {
+                //charCode 65 == capital A
+                let letter = String.fromCharCode(65+i)
+                if (!document.querySelector(`#section-${letter}`)) {
+                    label = letter;
+                    break;
+                }
+            }
+            //create section content
+            let section = newSection(label);
+            let line = newLine(section);
+            newMeasure(line);
+            //make the new section the active one
+            document.querySelector(`#section-selector-${label}`).click();
         });
 
     }//end of GUIfromSong function
 }//end of editorGUI declaration
 
+function newSection(label) {
+    //section selector button
+    d3.select('#section-selectors').append('div')
+        .attr('id', 'section-selector-' + label)
+        .attr('class', 'section-selector button')
+        .html(label)
+        //event handlers
+        .on('click', function() { tabChange(label, d3.event); })
+        .on('dblclick', function() { makeEditable(false, d3.event); })
+        .on('keydown', function() { notEditable(false, d3.event); })
+        .on('blur', function() { notEditable(false, d3.event); })
+//actual section content            
+    let sectionDiv = d3.select('#section-wrapper').append('div')
+        .attr('id', 'section-' + label)
+        .attr('class', 'section')
+    //add-line
+    sectionDiv.append('span')
+        .attr('class', 'gui-add-line')
+        .html('+')
+        .on('click', function(d) {
+            let line = newLine(d3.select(this.parentNode));
+            //add one blank measure to the new line
+            newMeasure(line);
+        });
+    return sectionDiv;
+}
+
+function newLine(parent) {
+    lineBox = parent.append('div')
+        .attr('class', 'gui-line')
+    lineBox.append('span')
+        .attr('class', 'gui-handle')
+        .html('\u{2195}');
+    lineBox.append('span')
+        .attr('class', 'gui-add-measure')
+        .html('+')
+        .on('click', function(d) {
+            newMeasure(d3.select(this.parentNode));
+        });
+    return lineBox;
+}
+
+function newMeasure(parent, measure) {
+    let measureBox = parent.append('span')
+        .attr('class', 'gui-measure')
+    measureBox.append('span')
+        .attr('class', 'gui-handle')
+        .html('\u{2195}');
+    //loop through beats in measure
+    for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
+        let beatBox = measureBox.append('span')
+            .attr('class', 'gui-beat')
+        //add chord if there is one
+        if (measure) {
+            let chord = measure[i];
+            if (chord) {
+                beatBox.append('span')
+                    .attr('class', 'gui-chord')
+                    .html(textToSymbol(chord));
+            }
+        }
+    }
+    return measureBox;
+}
+
+//for section selectors, sections, lines, measures, and beats; others currently handled elsewhere
 function newSortable(element, type) {
     params = (function() {
         switch (type) {
@@ -1121,9 +1158,7 @@ function newSortable(element, type) {
 editorGUI.setup();
 
 //allow user to edit some GUI elements' text
-function makeEditable(symbols = false, evt) {
-    console.log(evt)
-    console.log(symbols)
+function makeEditable(symbols, evt) {
     if (symbols) {
         evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, true);
     }
@@ -1131,7 +1166,7 @@ function makeEditable(symbols = false, evt) {
     evt.currentTarget.focus();
 }
 //reverse the above
-function notEditable(symbols = false, evt) {
+function notEditable(symbols, evt) {
     if (evt.key && !['Enter', 'Escape'].includes(evt.key)) { return; }
     if (symbols) {
         evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, false);
@@ -1140,13 +1175,13 @@ function notEditable(symbols = false, evt) {
 }
 
 //bring up the tab content for each section
-function tabChange(evt, tabID) {
+function tabChange(label, evt) {
     //style the button
     d3.selectAll('.section-selector').classed('active', false);
     evt.currentTarget.className += " active";
     //bring up the content
     d3.selectAll('.section').style('display', 'none');
-    document.getElementById(tabID).style.display = "flex";
+    d3.select(`#section-${label}`).style('display', 'flex');
 }
 
 //convert GUI elements to text
