@@ -34,13 +34,16 @@
 // general-----------------------------------------------------------
 $main-bg-color: black;
 
-$main-text-color: white;
+$main-text-color: lightcyan;
 $main-font: 16px 'Varela Round', Helvetica, sans-serif;
 $mono-font: 20px 'Cutive Mono', Courier, monospace;
 $inline-symbol-font-size: 1.5rem;
 
 $border: 1.5px solid turquoise;
+$border-secondary: 1.5px solid lightseagreen;
 $border-radius: 5px;
+$border-color: turquoise;
+$border-color-secondary: lightseagreen;
 
 $grid-gap: .5rem;
 
@@ -64,11 +67,11 @@ $input-height: 1.6rem;
 $input-min-width: 2rem;
 
 $button-bg-color: hsl(280, 61%, 35%);
-$button-text-color: white;
+$button-text-color: lightcyan;
 $button-text-size: 16px;
 $button-padding: .3rem .35rem;
-$button-hover-color: hotpink;
-$button-active-color: turquoise;
+$button-hover-color: lightseagreen;
+$button-active-color: hotpink;
 
 $button-symbol-font-size: 1.25rem;
 $button-symbol-margin: -.4rem 0 0 0;
@@ -87,7 +90,7 @@ $editor-bg-color: hsl(280, 30%, 15%);
 $spacer-color: black;
 $drag-ghost-color: lightgray;
 $drag-ghost-alpha: .4;
-$current-chord-color: red;
+$current-chord-color: hotpink;
 
 %grid {
     display: grid;
@@ -229,7 +232,7 @@ input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
     background-color: $button-hover-color;
     cursor: pointer;
 }
-input[type=button].active, input[type=checkbox]:checked {
+input[type=button].active, .button.active, input[type=checkbox]:checked {
     background-color: $button-active-color;
 }
 textarea, input[type=text], input[type=number] {
@@ -264,6 +267,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 .round-rect {
     @extend %border;
+    border: $border-secondary;
 
     height: .9rem;
 
@@ -371,6 +375,9 @@ input[type=range] {
     background: $button-bg-color;
     @extend %border;
 }
+::-webkit-scrollbar-thumb:hover {
+    background: $button-hover-color;
+}
 // ::-webkit-scrollbar-track {
 // }
 ::-webkit-scrollbar-corner {
@@ -383,7 +390,12 @@ input[type=range] {
 
     min-height: 0;
 
+    //@extend %border;
+    border: $border-secondary;
+    border-radius: $border-radius;
+
     @extend %grid;
+    grid-gap: 0;
     grid-template-columns: 1fr auto;
     grid-template-areas:
         '. chord-menu';
@@ -396,28 +408,45 @@ input[type=range] {
     background: $editor-bg-color;
     text-align: center;
 
-    @extend %border;
+    border-left: $border;
+    border-color: $border-color-secondary;
+    padding: $grid-gap 0;
 
     @extend %grid;
-    grid-template-rows: auto 1fr auto auto;
+    //grid-template-rows: 1fr auto;
+}
+#add-chord {
+    margin-left: $grid-gap;
+    //accounts for the width of the chord-menu scrollbar
+    margin-right: $scrollbar-padding + $scrollbar-thumb-width;
 }
 #chord-menu {
     overflow-y: scroll;
 
     @extend %grid;
-    grid-template-rows: 1fr;
+
+    border-top: $border-secondary;
+    border-bottom: $border-secondary;
+
+    padding-top: $grid-gap;
+    padding-bottom: $grid-gap;
+
 }
 #chord-menu > * {
-    // uses grid-gap instead of vertical margin
-    margin: 0 auto;
-}
-#spacer-menu > * {
-    display: inline-block;
-    vertical-align: middle;
+    margin: 0 $grid-gap;
 }
 #trash {
-    height: 50;
-    margin: auto;
+    cursor: move;
+
+    //centered with respect to the chords in the chord menu
+    margin-top: -.25rem;
+    margin-right: $scrollbar-padding + $scrollbar-thumb-width;
+    margin-left: $grid-gap;
+
+    height: 2rem;
+    font-size: 2rem;
+    color: lightseagreen;
+    text-align: center;
 }
 #trash > * {
     /* prevents chords from appearing here before being deleted */
@@ -438,8 +467,14 @@ input[type=range] {
         'sections pattern repeat-pattern .'
         'content content content content';
 }
+#section-menu > label {
+    margin-top: $grid-gap;
+}
 #section-select {
     grid-area: sections;
+
+    margin-left: $grid-gap/2;
+    margin-right: -$grid-gap/2;
 
     display: flex;
     flex-flow: row nowrap;
@@ -447,6 +482,13 @@ input[type=range] {
 #section-selectors {
     display: flex;
     flex-flow: row nowrap;
+}
+.section-selector, #add-tab {
+    margin: 0 $grid-gap/2;
+}
+#add-tab > * {
+    //font-size: $inline-symbol-font-size;
+    margin-top: -.3rem;
 }
 #pattern {
     grid-area: pattern;
@@ -461,64 +503,148 @@ input[type=range] {
 #section-wrapper {
     overflow: scroll;
 
-    background-color: $editor-bg-color;
+    background-color: $textbox-bg-color;
 
-    border: $border;
-    border-radius: $border-radius;
+    border-top: $border;
+    border-color: $border-color-secondary;
 
     grid-area: content;
 }
 .section {
     display: none;
+    margin: $grid-gap/2;
+
+    flex-flow: column nowrap;
+    align-items: flex-start;
 }
 /*gui drag zones and child elements*/
 .gui-line {
+    display: block;
     width: max-content;
+
+    margin: $grid-gap/2;
+
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
 }
-.gui-line > * {
-    display: inline-block;
-    vertical-align: middle;
+.gui-measure {
+    @extend %border;
+    margin: 0 $grid-gap/2;
+    padding: 0 $grid-gap/2;
+    background-color: $editor-bg-color;
+    // vertical-align: middle;
 }
-.drag-chord, .spacer-bar, .spacer-dot {
+.gui-handle, .gui-add-line, .gui-add-measure {
     cursor: move;
-    margin: .5em;
+    padding: 0 $grid-gap/4;
+
+    font-size: $inline-symbol-font-size;
+    display: inline-block;
+    color: lightseagreen;
+    vertical-align: middle;
+    &:hover {
+        color: $border-color;
+    }
+}
+.gui-add-line, .gui-add-measure {
+    cursor: pointer;
+    order: 1;
+    margin-left: $grid-gap/2; 
+}
+.gui-add-line {
+    margin-top: $grid-gap;
+}
+.gui-handle {
+    padding-top: .25rem;
+    padding-bottom: .5rem;
+}
+.gui-measure > .gui-handle {
+    border-right: $border;
+    border-color: lightseagreen;
+    margin-left: -.25rem;
+    margin-right: .25rem;
+}
+.gui-beat {
+    display: inline-block;
+    min-width: $input-height/2;
+    height: $input-height;
+
+    // @extend %border;
+    // border-left: 1px solid white;
+    // border-right: 1px solid lightseagreen;
+    padding: $grid-gap $grid-gap/2;
+    // padding: $grid-gap;
+    vertical-align: middle;
+
+    position: relative;
+}
+.gui-beat:after {
+    // width: 1rem;
+    // height: $input-height/4;
+    //@extend %border;
+    border: $border-secondary;
+    border-radius: $border-radius;
+    content: '';
+    //font-size: $inline-symbol-font-size;
+    color: lightseagreen;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    z-index: 1;
+    // vertical-align: middle;
+    // transform: translateY(50%);
+    padding: $input-height/8 $input-height/8;
+}
+.gui-beat:hover:after {
+    content: '+';
+    border:none;
+    color: $border-color;
+    font-size: $inline-symbol-font-size;
+}
+.gui-beat > .gui-chord {
+    z-index: 2;
+    position: relative;
+}
+.gui-chord {
+    cursor: move;
+    display: block;
 
     @extend %border;
-}
-.drag-chord:hover, .spacer-bar:hover, .spacer-dot:hover {
-    background-color: $button-hover-color;
-}
-.drag-chord {
+
     background-color: $button-bg-color;
     color: $button-text-color;
 
     height: $input-height;
     box-sizing: border-box;
-    // different from button because the font size is different; maybe replace with button height and a readjusted padding?
     padding: $button-padding;
 }
-.spacer-bar, .spacer-dot {
-    background-color: $spacer-color;
-}
-.spacer-bar {
-    width: $input-height*.5;
-    height: $input-height*1.5;
-}
-.spacer-dot {
-    width: $input-height * .75;
-    height: $input-height * .75;
-    border-radius: $input-height;
+.gui-chord:hover {
+    background-color: $button-hover-color;
 }
 .sort-select, .sort-drag {
-    background-color: $button-active-color;
+    //background-color: $button-active-color;
 }
 .sort-ghost {
-    background-color: $drag-ghost-color;
+    background-color: $button-hover-color;
     opacity: $drag-ghost-alpha;
 }
-.current-chord-gui {
+.gui-measure.gui-current {
     border-color: $current-chord-color;
 }
+.gui-chord.gui-current {
+    background-color: $current-chord-color !important;
+}
+.gui-beat.gui-current::after {
+    border-color: $current-chord-color !important;
+}
+//override hover settings
+//should be unnecessary now since all mouse events are blocked
+// .gui-measure > .gui-beat.gui-current::after {
+//     content: '' !important;
+//     @extend %border;
+// }
 
 /* text editor ---------------------------------*/
 #text-wrapper {
@@ -537,15 +663,11 @@ input[type=range] {
 #playback-dash {
     /* grid-area: dashboard; */
     @extend %border;
-    border-color: $auxExp-stroke;
-    padding: $grid-gap;
+    //border-color: $auxExp-stroke;
+    padding: $grid-gap 0;
 
     display: flex;
     flex-flow: row nowrap;
-    // @extend %grid;
-    // grid-template-rows: 1fr;
-    // // grid-template-columns: auto auto auto auto auto;
-    // justify-content: center;
 }
 #playback-dash > label {
     margin: auto 0;
