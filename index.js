@@ -711,27 +711,40 @@ let timer = {
                 audio.play(currentChord);
 
                 //update GUI
-                this.matchGUItoChord()
+                // this.matchGUItoChord()
             }
-            //either way, move to the next beat
+            //highlight the current beat and measure
+            this.matchGUItoChord()
+            //move to the next beat
             this.currentPos.increment();
             if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
                 this.stop();
             }
         }//end of 'if countIn' block
+
     },//end of step function
     
     matchGUItoChord() {
-        for (let obj of document.querySelectorAll('.current-chord-gui')) {
-            obj.classList.remove('current-chord-gui');
+        //clear all previous formatting
+        for (let obj of document.querySelectorAll('.gui-current')) {
+            obj.classList.remove('gui-current');
         }
-        let chord = document.querySelector(`#section-${this.currentPos.sectionName}`)
+        //activate current section
+        document.querySelector(`#section-selector-${this.currentPos.sectionName}`).click();
+        //outline the current measure
+        let measure = document.querySelector(`#section-${this.currentPos.sectionName}`)
             .querySelectorAll(`.gui-line`)[this.currentPos.lineIndex]
-            .querySelectorAll(`.gui-measure`)[this.currentPos.measureIndex]
-            .querySelectorAll(`.gui-beat`)[this.currentPos.beatIndex]
-            .querySelectorAll('.gui-chord')[0];
+            .querySelectorAll(`.gui-measure`)[this.currentPos.measureIndex];
+        measure.classList.add('gui-current');
+        //outline the current beat
+        let beat = measure.querySelectorAll(`.gui-beat`)[this.currentPos.beatIndex];
+        beat.classList.add('gui-current');
+        //outline the chord inside the beat, if there is one
+        //!!  right now, the chord only stays highlighted on the beat where it changes. There are a few ways I could fix this; I could remove '.gui-current' from all elements except chords above and then remove it from chords only in the block below.
+        //!!  if I won't want to do that, I could just format the chord according to it being the child of an active beat instead of formatting it separately from the beats
+        let chord = beat.querySelector('.gui-chord');
         if (chord) {
-            chord.classList.add('current-chord-gui');
+            chord.classList.add('gui-current');
         }
     },
     
@@ -775,11 +788,12 @@ let timer = {
     play: function(stop=false) {
         playBtn.style.display = 'none';
         pauseBtn.style.display = 'inline-block';
+        disableGUI();
 
         //this is recycled...is there a reason I don't just do this in one line?
-        let clear = document.querySelectorAll('.current-chord-gui');
+        let clear = document.querySelectorAll('.gui-current');
         for (let obj of clear) {
-            obj.classList.remove('current-chord-gui');
+            obj.classList.remove('gui-current');
         }
         
         //
@@ -802,10 +816,12 @@ let timer = {
             this.currentPos = new SongNav;
             d3.selectAll('.note-set').remove();   
             //this is recycled...is there a reason I don't just do this in one line?
-            let clear = document.querySelectorAll('.current-chord-gui');
+            let clear = document.querySelectorAll('.gui-current');
             for (let obj of clear) {
-                obj.classList.remove('current-chord-gui');
+                obj.classList.remove('gui-current');
             }
+            enableGUI();
+
         } else {
             this.currentPos.beatIndex = 0;
             d3.selectAll('.note-set')
@@ -877,7 +893,8 @@ function readFile (file) {
         document.getElementById('text-editor').value = contents;
         //parse song data from file
         song = new Song(contents);
-        editorGUI.setup();
+        // this only needs ot be done once now
+        // editorGUI.setup();
         editorGUI.GUIfromSong();
         timer.reset(true);
     }
@@ -918,45 +935,49 @@ let editorGUI = {
     dragBoxes: [],
     //do this on startup
     setup: function() {
-        //these elements are unique enough to not bother with the condensed 'newSortable' function
+        // section selectors 
+        newSortable(document.querySelector('#section-selectors'), 'selectors');
+             
         //chord menu
-        this.dragBoxes.push(new Sortable(document.querySelector('#chord-menu'), {
-            group: {
-                name: 'chords',
-                pull: 'clone',
-                put: function(to, from, dragged) {
-                    //prevent duplicate chords in chord menu
-                    for (let e of to.el.children) {
-                        if (e.innerHTML == dragged.innerHTML) { return false; }
-                    }
-                    return true;
-                },
-                revertClone: true
-            },
-            scroll: true,
-            sort:true,
-        }));
+        newSortable(document.querySelector('#chord-menu'), 'chord-menu');
+        d3.select('#add-chord')
+            .on('click', function() {
+                let chordBox = newChord(d3.select('#chord-menu'), '');
+                //immediately focus the new chord so the user can enter a name
+                makeEditable(true, chordBox.node())
+            });
+        
         //trash
+        //too complicated for the standard newSortable function
         ['measures', 'chords', 'lines', 'section-selectors'].forEach(function(groupName) {
             editorGUI.dragBoxes.push(new Sortable(document.querySelector('#trash'), {
-                group: {
-                    name: groupName,
-                    pull: false,
-                    put: true
-                },
+                group: groupName,
                 onAdd: function(evt) {
                     evt.item.parentNode.removeChild(evt.item);
                 },
-                scroll: false,
             }));
         });
-        //options common to all of the above
-        for (let e of this.dragBoxes) {
-            e.option('animation', 500);
-            e.option('ghostClass', 'sort-ghost');
-            e.option('chosenClass', 'sort-select');
-            e.option('dragClass', 'sort-drag');
-        }
+
+        //event listener for new section button
+        d3.select('#add-tab').on('click', function(d) {
+            //just in case the user has actually used all 26 letters as section names... (unicode quarter note)
+            let label = '\u{2669}';
+            //use the first unused letter of the alphabet as the name of the new section
+            for (i = 0; i < 26; i++) {
+                //charCode 65 == capital A
+                let letter = String.fromCharCode(65+i)
+                if (!document.querySelector(`#section-${letter}`)) {
+                    label = letter;
+                    break;
+                }
+            }
+            //create section content
+            let section = newSection(label);
+            let line = newLine(section);
+            newMeasure(line);
+            //make the new section the active one
+            document.querySelector(`#section-selector-${label}`).click();
+        }); 
     },//end of setup function
 
     //do this after loading song data
@@ -976,14 +997,12 @@ let editorGUI = {
         
         //chord menu
         let chordMenu = d3.select('#chord-menu')
-        for (let chord in song.chordLibrary) {
-            chordMenu.append('span')
-                .attr('class', 'gui-chord')
-                .html(textToSymbol(chord));
+        for (let chord of Object.keys(song.chordLibrary).sort()) {
+            newChord(chordMenu, chord);
         }
 
         //add tabs and tab content for each section
-        //!!consolidate all this to the newSection function!
+        //!!consolidate all this to the newSection function?
         for (let section of Object.keys(song.components).sort()) {
             let sectionDiv = newSection(section);
 
@@ -998,46 +1017,8 @@ let editorGUI = {
             });//end of line loop
         };//end of section loop
 
-        //make stuff draggable
-        //!!this needs to be done in the functions that create these elements in the first place!
-        newSortable(document.querySelector('#section-selectors'), 'selectors');
-        ['section', 'gui-line', 'gui-beat'].forEach(function (guiClass) {
-            for (let e of document.querySelectorAll('.' + guiClass)) {
-                newSortable(e, guiClass);
-            }
-        });
-             
         //select the first section as if the button had been clicked
         document.querySelector('.section-selector').click();
-
-        //make chords and section names editable
-        //!!will need to be moved when I add the ability to add new chords on demand
-        d3.selectAll('.gui-chord')
-            .on('dblclick', function() { makeEditable(true, d3.event); })
-            .on('keydown', function() { notEditable(true, d3.event); })
-            .on('blur', function() { notEditable(true, d3.event); })
-
-        //make the button work to create new sections
-        d3.select('#add-tab').on('click', function(d) {
-            //just in case the user has actually used all 26 letters as section names... (unicode quarter note)
-            let label = '\u{2669}';
-            //use the first unused letter of the alphabet as the name of the new section
-            for (i = 0; i < 26; i++) {
-                //charCode 65 == capital A
-                let letter = String.fromCharCode(65+i)
-                if (!document.querySelector(`#section-${letter}`)) {
-                    label = letter;
-                    break;
-                }
-            }
-            //create section content
-            let section = newSection(label);
-            let line = newLine(section);
-            newMeasure(line);
-            //make the new section the active one
-            document.querySelector(`#section-selector-${label}`).click();
-        });
-
     }//end of GUIfromSong function
 }//end of editorGUI declaration
 
@@ -1049,9 +1030,9 @@ function newSection(label) {
         .html(label)
         //event handlers
         .on('click', function() { tabChange(label, d3.event); })
-        .on('dblclick', function() { makeEditable(false, d3.event); })
-        .on('keydown', function() { notEditable(false, d3.event); })
-        .on('blur', function() { notEditable(false, d3.event); })
+        .on('dblclick', function() { makeEditable(false, this); })
+        .on('keydown', function() { notEditableKeyDown(d3.event); })
+        .on('blur', function() { notEditable(false, this); })
 //actual section content            
     let sectionDiv = d3.select('#section-wrapper').append('div')
         .attr('id', 'section-' + label)
@@ -1065,6 +1046,8 @@ function newSection(label) {
             //add one blank measure to the new line
             newMeasure(line);
         });
+    //enable dragging lines within the new section
+    newSortable(sectionDiv.node(), 'section');
     return sectionDiv;
 }
 
@@ -1080,6 +1063,8 @@ function newLine(parent) {
         .on('click', function(d) {
             newMeasure(d3.select(this.parentNode));
         });
+    //enable dragging measures within the new line
+    newSortable(lineBox.node(), 'gui-line');
     return lineBox;
 }
 
@@ -1093,23 +1078,65 @@ function newMeasure(parent, measure) {
     for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
         let beatBox = measureBox.append('span')
             .attr('class', 'gui-beat')
+            //event handler
+            .on('click', function() {
+                //create an empty new chord, if there isn't already a chord in the beat
+                if (this.firstChild) { return; }
+                let chordBox = newChord(d3.select(this), '');
+                //immediately focus the new chord so the user can enter a name
+                makeEditable(true, chordBox.node())
+            })
         //add chord if there is one
         if (measure) {
             let chord = measure[i];
             if (chord) {
-                beatBox.append('span')
-                    .attr('class', 'gui-chord')
-                    .html(textToSymbol(chord));
+                newChord(beatBox, chord);
             }
         }
+        //enable dragging chords within the new beats
+        newSortable(beatBox.node(), 'gui-beat');
     }
     return measureBox;
 }
 
+function newChord(parent, chord) {
+    let chordBox = parent.append('span')
+        .attr('class', 'gui-chord')
+        .html(textToSymbol(chord))
+        //event listeners
+        .on('dblclick', function() { makeEditable(true, this); })
+        .on('keydown', function() { notEditableKeyDown(d3.event); })
+        .on('blur', function() { notEditable(true, this); })
+    return chordBox;
+}
+
 //for section selectors, sections, lines, measures, and beats; others currently handled elsewhere
+//!!closure for related versions of this function?
 function newSortable(element, type) {
-    params = (function() {
+    let params = (function() {
         switch (type) {
+            case 'chord-menu': return {
+                group: {
+                    name: 'chords',
+                    pull: function(to, from, dragged) {
+                        //if dragged to the trash, just delete (move) it, don't clone it
+                        if(to.el.id == 'trash') { return true; } 
+                        return 'clone';
+                    },
+                    put: function(to, from, dragged) {
+                        //prevent duplicate chords in chord menu
+                        for (let e of to.el.children) {
+                            if (e.innerHTML == dragged.innerHTML) { return false; }
+                        }
+                        return true;
+                    },
+                    revertClone: true
+                },
+                draggable: '.gui-chord',
+                //this is counter-intuitive--it means not to let the user sort the chords manually, e.g. chords remain in their original order (alphabetical)
+                //!!now, how to alphabetize new chords added to the menu?
+                sort: false
+            }
             case 'selectors': return {
                 group: 'selectors',
                 draggable: '.section-selector'
@@ -1127,9 +1154,10 @@ function newSortable(element, type) {
             case 'gui-beat': return {
                 group: {
                     name: 'chords',
-                    put: function(to) {
+                    put: function(to, from, dragged) {
                         //prevent adding multiple chords to one beat
-                        if (to.el.children[0]) return false;
+                        //weird that it's necessary to check the class here, but it is, otherwise the beat will also accept entire measures, lines, etc.
+                        if (!dragged.classList.contains('gui-chord') || to.el.children[0]) return false;
                         return true;
                     },
                     //I though this would keep a copy in the cell if you dragged it to the chord menu, but nope
@@ -1141,16 +1169,16 @@ function newSortable(element, type) {
     })();
     let options = {
         group: params.group,
-        animation: 500,
         draggable: params.draggable,
 
+        animation: 500,
         ghostClass: 'sort-ghost',
         chosenClass: 'sort-select',
         dragClass: 'sort-drag',
         scroll: true,
     }
     if (params.handle) { options['handle'] = params.handle; }
-
+    if (params.sort===false) { options['sort'] = params.sort; }
     editorGUI.dragBoxes.push(new Sortable(element, options));
 }//end of newSortable function
 
@@ -1158,20 +1186,72 @@ function newSortable(element, type) {
 editorGUI.setup();
 
 //allow user to edit some GUI elements' text
-function makeEditable(symbols, evt) {
+function makeEditable(symbols, element) {
     if (symbols) {
-        evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, true);
-    }
-    evt.currentTarget.contentEditable = 'true';
-    evt.currentTarget.focus();
+        element.innerHTML = textToSymbol(element.innerHTML, true);
+    }   
+    element.contentEditable = 'true';
+    element.focus();
+    //select all text if there is already a name
+    selection = window.getSelection();
+    range = document.createRange();
+    range.selectNodeContents(element);
+    selection.removeAllRanges();
+    selection.addRange(range);
 }
-//reverse the above
-function notEditable(symbols, evt) {
-    if (evt.key && !['Enter', 'Escape'].includes(evt.key)) { return; }
-    if (symbols) {
-        evt.currentTarget.innerHTML = textToSymbol(evt.currentTarget.innerHTML, false);
+
+//check to see if the key pressed should make the element lose focus
+function notEditableKeyDown(evt) {
+    if (evt.key && ['Enter', 'Escape'].includes(evt.key)) { evt.currentTarget.blur() ;
     }
-    evt.currentTarget.contentEditable = 'false';
+}
+
+//reverse everything from the makeEditable function
+function notEditable(symbols, element) {
+    let text = symbols ? textToSymbol(element.innerHTML, false) : element.innerHTML;
+    if (symbols) {
+        element.innerHTML = text;
+    }
+    element.contentEditable = 'false';
+    //if the element is a chord
+    if (text && element.classList.contains('gui-chord')) {
+        //check for duplicates
+        let duplicate = false;
+        for (let selected of document.querySelector('#chord-menu').querySelectorAll('.gui-chord')) {
+            if (selected != element && selected.innerHTML == text) {
+                duplicate = true;
+                break;
+            }
+        }
+        
+        if (element.parentNode.id = 'chord-menu') {
+            if (duplicate) { element.remove(); }
+            sortChordMenu();
+        } else if (!duplicate) { 
+            let newMenuItem = newChord(d3.select('#chord-menu'), text);
+            //!!doesn't work... trying to make the chord menu automaticall scroll to show the new item
+            //newMenuItem.node().focus();
+            sortChordMenu();
+        }
+    //if the target is a section selector, change its ID name and that of the section itself as well.
+    //!!add validation for duplicate names!
+    } else if (text && element.classList.contains('section-selector')) {
+        let oldID = element.id.slice(17);
+        document.querySelector(`#section-${oldID}`).id=`section-${text}`;
+        element.id=(`section-selector-${text}`);
+    }
+}
+
+function sortChordMenu() {
+    let chords = [];
+    let elements = document.querySelector('#chord-menu').querySelectorAll('.gui-chord');
+    for (let element of elements) {
+        chords.push(element.innerHTML);
+    }
+    chords.sort();
+    elements.forEach(function(e, i) {
+        e.innerHTML = chords[i];
+    });
 }
 
 //bring up the tab content for each section
@@ -1248,8 +1328,8 @@ document.querySelector('#text-to-gui').addEventListener('click', function() {
     });
 
 //!!make this generalizable to other replacement functions?
+//!!do this using a closure, converting the confusing "false" param into a plain-English label that includes that paramater implicitly
 function textToSymbol(str, reversed = false) {
-    //add a setting to turn this off and use plain text
     let pairs = [
         ['uni', '1'],
         ['dim', '\u{00b0}'],
@@ -1261,15 +1341,35 @@ function textToSymbol(str, reversed = false) {
     ]
     pairs.forEach(function(e) {
         if (reversed) {
-            str = str.replace(e[1], e[0]);
+            str = str.replace(new RegExp(e[1], 'g'), e[0]);
         } else {
-            str = str.replace(e[0], e[1]);
+            str = str.replace(new RegExp(e[0], 'g'), e[1]);
         }
     })
     return str;
 }
 
+function disableGUI() {
+    for (let id of ['text-wrapper', 'gui-wrapper']) {
+        for (let wrapper of document.querySelectorAll('#' + id)) {  
+            for (let category of ['.button', , '.gui-add-line', '.gui-add-measure', '.gui-line', '.gui-measure', '.gui-beat', '.gui-chord', 'input', 'textarea']) {
+                for (let element of wrapper.querySelectorAll(category)) {
+                    if (!['play', 'pause', 'stop', 'volume', 'tempo', 'download'].includes(element.id) && !element.classList.contains('section-selector')) {
+                        element.style.pointerEvents = 'none';
+                        element.classList.add('disabled');
+                    }
+                }
+            }
+        }
+    }
+}
 
+function enableGUI() {
+    document.querySelectorAll('.disabled').forEach(function(element) {
+        element.style.pointerEvents = 'auto';
+        element.classList.remove('disabled')
+    });
+}
 
 
 
