@@ -507,12 +507,23 @@ let diagram = {
     },//end of diagram setup function
 
     //chordData: chord, fadeIn, duration
-    update: function(chord, fadeIn, duration) {
+    update: function(chord, fadeIn) {//, duration) {
+
+        //move the diagram components through their stages
+        d3.selectAll('.fading-out').remove();
+        d3.selectAll('.fading-in')
+            .interrupt()
+            .style('opacity', 1)
+            .classed('fading-in', false)
+            .classed('fading-out', true);
+        //instantiate diagram components for next chord
+        
+        
         //put this in a format d3 can use
         let chordData = {
             chord: chord,
             fadeIn: fadeIn,
-            duration: duration
+            //duration: duration
         }
         //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
@@ -534,6 +545,7 @@ let diagram = {
         noteSet
             .attr('class', 'note-set')
             .style('opacity', 0)
+            .classed('fading-in', true)
             //1st transition: fade-in
             .transition()
                 .duration(function(d) {
@@ -548,15 +560,15 @@ let diagram = {
                     } 
                 }).style('opacity', .5)
                 //2nd transition: fully opaque
-                .transition()
-                    .duration(0)
-                    .style('opacity', 1)
-                    //final transition: remove
-                    .transition()
-                        .duration(function(d) {
-                            return d.duration;
-                        })
-                        .remove();
+                // .transition()
+                //     .duration(0)
+                //     .style('opacity', 1)
+                //     //final transition: remove
+                //     .transition()
+                //         .duration(function(d) {
+                //             return d.duration;
+                //         })
+                //         .remove();
 
         //append <g> for each string;
         //  makes it easier to set the notes' y values
@@ -608,11 +620,14 @@ diagram.setup();
 //TIMING-------------------------------------------------------------
 
 class SongNav {
-    get section() {
-        return song.components[this.sectionName];
+    get structure() {
+        return timer.repeat ? song.repeatStruct : song.singleStruct;
     }
     get sectionName() {
         return this.structure[this.sectionIndex];
+    }
+    get section() {
+        return song.components[this.sectionName];
     }
     get line() { return this.section[this.lineIndex]; }
     get measure() { return this.line[this.measureIndex]; }
@@ -625,7 +640,8 @@ class SongNav {
         this.measureIndex = previous ? previous.measureIndex : 0;
         this.beatIndex = previous ? previous.beatIndex : 0;
         //do this here so toggling repeat mid-playback doesn't have any effect
-        this.structure = previous ? previous.structure : timer.repeat ? song.repeatStruct : song.singleStruct;
+        //!!actually that shouldn't matter now that playback disables all controls
+        //this.structure = previous ? previous.structure : timer.repeat ? song.repeatStruct : song.singleStruct;
     }// end of constructor
 
     increment(nextChord=false) {
@@ -633,15 +649,17 @@ class SongNav {
         do {
             if (++this.beatIndex >= this.measure.length) {
                 this.beatIndex = 0;
-                this.measureIndex++;
-                if (this.measureIndex >= this.line.length) {
+                //this.measureIndex++;
+                if (++this.measureIndex >= this.line.length) {
                     this.measureIndex = 0;
-                    this.lineIndex++;
-                    if (this.lineIndex >= this.section.length) {
+                    //this.lineIndex++;
+                    if (++this.lineIndex >= this.section.length) {
                         this.lineIndex = 0;
-                        this.sectionIndex++;
-                        if (this.sectionIndex >= this.structure.length &&timer.repeat) {
-                                this.sectionIndex = 0;
+                        //this.sectionIndex++;
+                        if (++this.sectionIndex >= this.structure.length) {
+                            if (timer.repeat) { this.sectionIndex = 0; }
+                            //prevents error when reaching the end of the song in non-repeat mode
+                            else { return false; }
                         }
                     }
                 }
@@ -657,9 +675,13 @@ class SongNav {
 }// end of SongNav definition
 
 let timer = {
-    //!!quick and dirty
-    swing: false,
-    repeat: true,
+    get swing() {
+        return document.querySelector('#swing').classList.contains('active');
+    },
+    //repeat: false,
+    get repeat() {
+        return document.querySelector('#repeat').classList.contains('active');
+    },
     //find out how many counts per beat
     get countsPerBeat() {
         //if the time signature is in 8ths, 1 count per beat is enough
@@ -681,18 +703,24 @@ let timer = {
 
         //the chord that starts on this beat
         let currentChord = song.chordLibrary[this.currentPos.chord];
+        let diagramChord = currentChord;
+        let chordChange = false;
+        let fadeIn, nextChord;
 
         //prepare for the next chord
         let findNext = new SongNav(this.currentPos);
+        //console.log(findNext);
         let beatsToNext = findNext.increment(true);
-        let nextChord = song.chordLibrary[findNext.chord];
+        //prevents error when reaching the end of the song in non-repeat mode
+        if (beatsToNext) { nextChord = song.chordLibrary[findNext.chord]; }
         
         if (this.countIn) {
             //only do this on the first beat of the countIn
             if (this.countIn == song.meter.beatsPerMeasure) {
-                let fadeIn = song.meter.beatsPerMeasure * this.countsPerBeat * this.tempoMil;
-                let duration = beatsToNext*this.countsPerBeat*this.tempoMil;
-                diagram.update(currentChord, fadeIn, duration)
+                fadeIn = song.meter.beatsPerMeasure * this.countsPerBeat * this.tempoMil;
+                duration = beatsToNext*this.countsPerBeat*this.tempoMil;
+                chordChange = true;
+                //diagram.update(currentChord, fadeIn, duration)
             }
             //count down until countIn is falsy
             this.countIn--;
@@ -700,12 +728,18 @@ let timer = {
             //if there is a chord change on this beat
             if (currentChord) {
                 //find the NEXT next chord so we know how long the next chord should be displayed on the diagram
-                let findNextNext = new SongNav(findNext);
-                let beatsToNextNext = findNextNext.increment(true);
+                // let findNextNext = new SongNav(findNext);
+                // console.log(findNextNext);
+                // //!!causes an error when repeat is turned off
+                // let beatsToNextNext = findNextNext.increment(true);
 
-                let fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
-                let duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
-                diagram.update(nextChord, fadeIn, duration);
+                if (beatsToNext) {
+                    fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
+                    diagramChord = nextChord;
+                    chordChange = true;
+                }
+                // duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
+                //diagram.update(nextChord, fadeIn, duration);
 
                 //play chord
                 audio.play(currentChord);
@@ -714,20 +748,23 @@ let timer = {
                 // this.matchGUItoChord()
             }
             //highlight the current beat and measure
-            this.matchGUItoChord()
+            this.matchGUItoChord(chordChange)
             //move to the next beat
             this.currentPos.increment();
             if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
-                this.stop();
+                this.reset(true);
             }
         }//end of 'if countIn' block
 
+        if (chordChange) { diagram.update(diagramChord, fadeIn); }
+
     },//end of step function
     
-    matchGUItoChord() {
+    matchGUItoChord(chordChange) {
         //clear all previous formatting
         for (let obj of document.querySelectorAll('.gui-current')) {
-            obj.classList.remove('gui-current');
+            //keep the chord highlighted even as highlighting empty beats
+            if (chordChange || !obj.classList.contains('gui-chord')) { obj.classList.remove('gui-current'); }
         }
         //activate current section
         document.querySelector(`#section-selector-${this.currentPos.sectionName}`).click();
@@ -740,12 +777,8 @@ let timer = {
         let beat = measure.querySelectorAll(`.gui-beat`)[this.currentPos.beatIndex];
         beat.classList.add('gui-current');
         //outline the chord inside the beat, if there is one
-        //!!  right now, the chord only stays highlighted on the beat where it changes. There are a few ways I could fix this; I could remove '.gui-current' from all elements except chords above and then remove it from chords only in the block below.
-        //!!  if I won't want to do that, I could just format the chord according to it being the child of an active beat instead of formatting it separately from the beats
         let chord = beat.querySelector('.gui-chord');
-        if (chord) {
-            chord.classList.add('gui-current');
-        }
+        if (chord) { chord.classList.add('gui-current'); }
     },
     
     //display the count in a textbox; play sound on downbeats
@@ -784,7 +817,7 @@ let timer = {
         //document.getElementById('counter').value += marquis;
     },//end of marquis function
 
-    paused: true,
+    //paused: true,
     play: function(stop=false) {
         playBtn.style.display = 'none';
         pauseBtn.style.display = 'inline-block';
@@ -868,6 +901,14 @@ playBtn.addEventListener('click', timer.play.bind(timer));
 let pauseBtn = document.getElementById('pause');
 pauseBtn.addEventListener('click', timer.reset.bind(timer, false));
 document.querySelector('#stop').addEventListener('click', timer.reset.bind(timer, true));
+
+d3.select('#repeat').on('click', buttonToggle);
+d3.select('#swing').on('click', buttonToggle);
+
+function buttonToggle() {
+    let button = d3.select(this)
+    button.classed('active', !button.classed('active'));
+}
 
 //FILE HANDLING--------------------------------------------------
 
@@ -1226,7 +1267,7 @@ function notEditable(symbols, element) {
         
         if (element.parentNode.id = 'chord-menu') {
             if (duplicate) { element.remove(); }
-            sortChordMenu();
+            sortChordMenu();    
         } else if (!duplicate) { 
             let newMenuItem = newChord(d3.select('#chord-menu'), text);
             //!!doesn't work... trying to make the chord menu automaticall scroll to show the new item
