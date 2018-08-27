@@ -829,7 +829,6 @@ let timer = {
             obj.classList.remove('gui-current');
         }
         
-        //
         d3.selectAll('.note-set').remove();   
         //set timer, and convert bpm to milliseconds:
         this.beat = setInterval(this.step.bind(this), this.tempoMil);
@@ -1322,6 +1321,7 @@ function GUItoText() {
         let label = selector.innerHTML;
         text += `\n${label}[`;
         //the id may be different from the button label, but it will still be associated with the same section content
+        //!! ^ this is no longer the case
         //magic number 17 = the length of 'section-selector-', which is the irrelevant part of the id
         let id = `#section-${selector.id.slice(17)}`;
         let section = document.querySelector(id);
@@ -1484,27 +1484,18 @@ let audio = {
         this.stop.call(this);
         this.treble = [];
         let root = encodeNote(chord.root);
+
         //assign root to bass
-        this.bass = this.context.createOscillator();
-        this.bass.frequency.value = this.frequency(root, 2);
-        this.bass.type = 'sawtooth';
-        this.bass.connect(this.gain.bass);
-        this.bass.start();
+        this.bass = new Note(audio.frequency(root, 2), 'bass');
+
         //convert chord intervals into absolute notes
-        let treble = chord.guides.concat(chord.auxExp).map(function(el) {
-            return (encodeInterval(el) + root)%12;
-        });
+        //let treble = chord.guides.concat(chord.auxExp).map(function(el) {
+        //!!anything more than bass and guide-tones sounds really busy. Maybe move auxExp to a different octave?
+        let treble = chord.guides.map(el => (encodeInterval(el) + root) % 12);
         // create array of oscillators to play treble
         // connect all new oscillators to respective gains
         // start oscillators
-        this.treble = treble.map(function(el) {
-            let osc = audio.context.createOscillator();
-            osc.frequency.value = audio.frequency(el, 3);
-            // osc.type = 'sawtooth';
-            osc.connect(audio.gain.treble);
-            osc.start();
-            return osc;
-        });
+        this.treble = treble.map(el => new Note(audio.frequency(el, 3), 'treble'));
     },
 
     //stop all notes (doesn't work on percussion)
@@ -1613,16 +1604,45 @@ let audio = {
 }
 audio.setup();
 
-//DEPRECATED BUT USEFUL FOR REFERENCE----------------------------------
-/*
-let button = document.getElementById('button');
-button.addEventListener('click', update);
-input.addEventListener('keyup', function(e) {
-    //keyCode 13 == 'enter' key
-    //works better than form submission for some reason
-    if (e.keyCode===13) {
-        button.click();
-    }});
-*/
+//organ sound
+class Note {
+    constructor(fundamental, channel) {
 
+        //create envelope
+        let noteGain = audio.context.createGain();
+        noteGain.connect(audio.gain[channel]);
 
+        //attack, sustain
+        noteGain.gain.value = .0001;
+        noteGain.gain.exponentialRampToValueAtTime(1, audio.now + .05);
+        noteGain.gain.exponentialRampToValueAtTime(.75, audio.now + 1);
+
+        this.partials = [];
+        for (let i = 0; i < 8; i++) {
+            //partial envelope
+            let partialGain = audio.context.createGain();
+            //each successive overtone is exponentially quieter
+            partialGain.gain.value = 1/(i+1);
+            partialGain.connect(noteGain);
+
+            let osc = audio.context.createOscillator();
+            // fundamental and even-numbered overtones
+            osc.frequency.value = fundamental * (i == 0 ? 1 : 2 * i);
+            osc.type = 'triangle';
+            osc.connect(partialGain);
+            osc.start();
+
+            this.partials.push(osc);
+        }
+
+        this.noteGain = noteGain;
+    }
+
+    stop() {
+        //envelope: release
+        this.noteGain.gain.exponentialRampToValueAtTime(.0001, audio.now + 1);
+        for (let i of this.partials) {
+            i.stop(audio.now + 1);
+        }
+    }
+}
