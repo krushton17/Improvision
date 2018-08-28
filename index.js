@@ -256,12 +256,9 @@ class Song {
             if (beatUnits == 8) {
                 beatsPerMeasure /= 3;
             }
-            //swing boolean
-            //let swing = header[4] && header[4] == 'swing';
             return {
                 beatsPerMeasure: beatsPerMeasure,
                 beatUnits: beatUnits,
-                //swing: swing
             };
         })();//end of meter parsing
 
@@ -322,6 +319,7 @@ class Song {
         this.chordLibrary = this.constructChordLib(sections);
     }//end of constructor
 
+    //!!couldn't I just create an empty set before parsing the song file and add the chords to the set at the same time as I add them to the chord sequence?
     constructChordLib(sections) {
         let chordLibrary = {}
         //set.add will skip duplicate values
@@ -394,7 +392,7 @@ let diagram = {
 
     //set up the blank diagram
     setup: function() {
-        //!!add something to clear the diagram if changing instruments or resizing it
+        //!!add something to clear the diagram if changing instruments or resizing it? (or just delete it and make a new diagram object)
         //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
         let yScale = this.yScale;
@@ -506,8 +504,7 @@ let diagram = {
                 .attr('id', 'note-container')
     },//end of diagram setup function
 
-    //chordData: chord, fadeIn, duration
-    update: function(chord, fadeIn) {//, duration) {
+    update: function(chord, fadeIn) {
 
         //move the diagram components through their stages
         d3.selectAll('.fading-out').remove();
@@ -516,14 +513,13 @@ let diagram = {
             .style('opacity', 1)
             .classed('fading-in', false)
             .classed('fading-out', true);
+
         //instantiate diagram components for next chord
-        
         
         //put this in a format d3 can use
         let chordData = {
             chord: chord,
             fadeIn: fadeIn,
-            //duration: duration
         }
         //avoid a 'this' conflict when calling these inside d3 functions
         let xScale = this.xScale;
@@ -546,32 +542,20 @@ let diagram = {
             .attr('class', 'note-set')
             .style('opacity', 0)
             .classed('fading-in', true)
-            //1st transition: fade-in
+            // fade-in
             .transition()
                 .duration(function(d) {
                     return d.fadeIn;
                 })
                 .on('start', function() {
-                    //move to back;
-                    //  keeps current chord's notes in front of next chord's notes
+                    // move to back; keeps current chord's notes in front of next chord's notes
                     var firstChild = this.parentNode.firstChild; 
                     if (firstChild) { 
                         this.parentNode.insertBefore(this, firstChild); 
                     } 
                 }).style('opacity', .5)
-                //2nd transition: fully opaque
-                // .transition()
-                //     .duration(0)
-                //     .style('opacity', 1)
-                //     //final transition: remove
-                //     .transition()
-                //         .duration(function(d) {
-                //             return d.duration;
-                //         })
-                //         .remove();
 
-        //append <g> for each string;
-        //  makes it easier to set the notes' y values
+        // append <g> for each string; makes it easier to set the notes' y values
         noteSet.selectAll('g')
             .data(instrument.strings)
             .enter().append('g')
@@ -580,8 +564,8 @@ let diagram = {
                 let notes = d3.select(this).selectAll('g')
                     //switch to using the note data instead of string data
                     .data(chordData.chord.fretMap[d])
-                    //append <g> for each note;
-                    //makes it easier to set x values
+                    // append <g> for each note;
+                    // makes it easier to set x values
                     .enter().append('g')
                     .attr("transform", function(d, i) { return `translate(${xScale(d.fret-.5)},0)`})
 
@@ -639,9 +623,6 @@ class SongNav {
         this.lineIndex = previous ? previous.lineIndex : 0;
         this.measureIndex = previous ? previous.measureIndex : 0;
         this.beatIndex = previous ? previous.beatIndex : 0;
-        //do this here so toggling repeat mid-playback doesn't have any effect
-        //!!actually that shouldn't matter now that playback disables all controls
-        //this.structure = previous ? previous.structure : timer.repeat ? song.repeatStruct : song.singleStruct;
     }// end of constructor
 
     increment(nextChord=false) {
@@ -649,13 +630,10 @@ class SongNav {
         do {
             if (++this.beatIndex >= this.measure.length) {
                 this.beatIndex = 0;
-                //this.measureIndex++;
                 if (++this.measureIndex >= this.line.length) {
                     this.measureIndex = 0;
-                    //this.lineIndex++;
                     if (++this.lineIndex >= this.section.length) {
                         this.lineIndex = 0;
-                        //this.sectionIndex++;
                         if (++this.sectionIndex >= this.structure.length) {
                             if (timer.repeat) { this.sectionIndex = 0; }
                             //prevents error when reaching the end of the song in non-repeat mode
@@ -678,7 +656,6 @@ let timer = {
     get swing() {
         return document.querySelector('#swing').classList.contains('active');
     },
-    //repeat: false,
     get repeat() {
         return document.querySelector('#repeat').classList.contains('active');
     },
@@ -699,7 +676,8 @@ let timer = {
         //equivalent to resetting it to 0 and then incrementing it
         this.counter = 1;
 
-        //play metronome here?
+        //play metronome (it's going to take some work to make the first beat of a measure sound different)
+        audio.percussion(false, false, false, true, true);
 
         //the chord that starts on this beat
         let currentChord = song.chordLibrary[this.currentPos.chord];
@@ -709,7 +687,6 @@ let timer = {
 
         //prepare for the next chord
         let findNext = new SongNav(this.currentPos);
-        //console.log(findNext);
         let beatsToNext = findNext.increment(true);
         //prevents error when reaching the end of the song in non-repeat mode
         if (beatsToNext) { nextChord = song.chordLibrary[findNext.chord]; }
@@ -718,46 +695,35 @@ let timer = {
             //only do this on the first beat of the countIn
             if (this.countIn == song.meter.beatsPerMeasure) {
                 fadeIn = song.meter.beatsPerMeasure * this.countsPerBeat * this.tempoMil;
-                duration = beatsToNext*this.countsPerBeat*this.tempoMil;
                 chordChange = true;
-                //diagram.update(currentChord, fadeIn, duration)
             }
             //count down until countIn is falsy
             this.countIn--;
         } else {
             //if there is a chord change on this beat
             if (currentChord) {
-                //find the NEXT next chord so we know how long the next chord should be displayed on the diagram
-                // let findNextNext = new SongNav(findNext);
-                // console.log(findNextNext);
-                // //!!causes an error when repeat is turned off
-                // let beatsToNextNext = findNextNext.increment(true);
-
+                //prevent error when reaching the end of the song in non-repeat mode
                 if (beatsToNext) {
                     fadeIn = beatsToNext*this.countsPerBeat*this.tempoMil;
                     diagramChord = nextChord;
                     chordChange = true;
                 }
-                // duration = beatsToNextNext*this.countsPerBeat*this.tempoMil;
-                //diagram.update(nextChord, fadeIn, duration);
 
                 //play chord
                 audio.play(currentChord);
-
-                //update GUI
-                // this.matchGUItoChord()
             }
             //highlight the current beat and measure
             this.matchGUItoChord(chordChange)
             //move to the next beat
             this.currentPos.increment();
+            //if we've reached the end of the song, and we're not in repeat mode
             if (!this.repeat && this.currentPos.sectionIndex >= this.currentPos.structure.length) {
                 this.reset(true);
             }
-        }//end of 'if countIn' block
+        }//end of 'if countIn/else' block
 
+        //finally, update the diagram
         if (chordChange) { diagram.update(diagramChord, fadeIn); }
-
     },//end of step function
     
     matchGUItoChord(chordChange) {
@@ -782,7 +748,6 @@ let timer = {
     },
     
     //display the count in a textbox; play sound on downbeats
-    //!!move metronome sound to update function, or make it its own?
     marquis: function() {
         //number of counts so far this measure
         let count = this.counter % (song.meter.beatsPerMeasure*this.countsPerBeat);
@@ -812,7 +777,6 @@ let timer = {
         } else {
             marquis = '.'
         }
-
         //append the text to the marquis textbox
         //document.getElementById('counter').value += marquis;
     },//end of marquis function
@@ -823,14 +787,13 @@ let timer = {
         pauseBtn.style.display = 'inline-block';
         disableGUI();
 
-        //this is recycled...is there a reason I don't just do this in one line?
-        let clear = document.querySelectorAll('.gui-current');
-        for (let obj of clear) {
+        //in case there wasn't a hard reset
+        for (let obj of document.querySelectorAll('.gui-current')) {
             obj.classList.remove('gui-current');
         }
         
         d3.selectAll('.note-set').remove();   
-        //set timer, and convert bpm to milliseconds:
+        //set timer
         this.beat = setInterval(this.step.bind(this), this.tempoMil);
     },//end of play function
 
@@ -838,40 +801,28 @@ let timer = {
     reset: function(hard=false) {
         this.countIn = song.meter.beatsPerMeasure;
         this.counter = 0;
-        //this.beatIndex = 0;
 
-        //this.paused = true;
         pauseBtn.style.display = 'none';
         playBtn.style.display = 'inline-block';
 
         if (hard) {
             this.currentPos = new SongNav;
             d3.selectAll('.note-set').remove();   
-            //this is recycled...is there a reason I don't just do this in one line?
-            let clear = document.querySelectorAll('.gui-current');
-            for (let obj of clear) {
+            for (let obj of document.querySelectorAll('.gui-current')) {
                 obj.classList.remove('gui-current');
             }
             enableGUI();
-
         } else {
+            //reset the position within the measure, but nothing else
             this.currentPos.beatIndex = 0;
-            d3.selectAll('.note-set')
-                //cancel current and pending animations
-                .interrupt()
-                //make semitransparent notes disappear
-                //!!replace this with a remove() function?
-                .style('opacity', function() {
-                    if (d3.select(this).style('opacity') < 1) {
-                        return 0;
-                    }
-                });
+            //remove chords that are fading in, leaving only the current chord
+            d3.selectAll('.fading-in').remove();
         }
         audio.stop();
         if (this.beat) { clearInterval(this.beat); }
-        //this.currentGUIel = {};
     },//end of reset function
 }//end of timer definition
+
 /*
 //function to make outgoing notes flash
 //!move this into the timer function eventually
@@ -901,6 +852,7 @@ let pauseBtn = document.getElementById('pause');
 pauseBtn.addEventListener('click', timer.reset.bind(timer, false));
 document.querySelector('#stop').addEventListener('click', timer.reset.bind(timer, true));
 
+//divs that behave like checkboxes
 d3.select('#repeat').on('click', buttonToggle);
 d3.select('#swing').on('click', buttonToggle);
 
@@ -1000,7 +952,7 @@ let editorGUI = {
 
         //event listener for new section button
         d3.select('#add-tab').on('click', function(d) {
-            //just in case the user has actually used all 26 letters as section names... (unicode quarter note)
+            //!!just in case the user has actually used all 26 letters as section names... (unicode quarter note) -- except this still doesn't help if they add one more section, so why bother?
             let label = '\u{2669}';
             //use the first unused letter of the alphabet as the name of the new section
             for (i = 0; i < 26; i++) {
@@ -1045,7 +997,6 @@ let editorGUI = {
         //!!consolidate all this to the newSection function?
         for (let section of Object.keys(song.components).sort()) {
             let sectionDiv = newSection(section);
-
             //loop through lines in section
             song.components[section].forEach(function(line) {
                 //add a sortable div for each line in the section
@@ -1151,7 +1102,6 @@ function newChord(parent, chord) {
 }
 
 //for section selectors, sections, lines, measures, and beats; others currently handled elsewhere
-//!!closure for related versions of this function?
 function newSortable(element, type) {
     let params = (function() {
         switch (type) {
@@ -1173,8 +1123,7 @@ function newSortable(element, type) {
                     revertClone: true
                 },
                 draggable: '.gui-chord',
-                //this is counter-intuitive--it means not to let the user sort the chords manually, e.g. chords remain in their original order (alphabetical)
-                //!!now, how to alphabetize new chords added to the menu?
+                //this is counter-intuitive--it means not to let the user sort the chords manually
                 sort: false
             }
             case 'selectors': return {
@@ -1200,7 +1149,7 @@ function newSortable(element, type) {
                         if (!dragged.classList.contains('gui-chord') || to.el.children[0]) return false;
                         return true;
                     },
-                    //I though this would keep a copy in the cell if you dragged it to the chord menu, but nope
+                    //I though this would keep a copy in the cell if you dragged it to the chord menu, but nope. no idea what it actually does
                     revertClone: true
                 },
                 draggable: '.gui-chord'
@@ -1282,6 +1231,7 @@ function notEditable(symbols, element) {
     }
 }
 
+//alphabetize chords in the menu; easier to rearrange the elements' content than the elements themselves
 function sortChordMenu() {
     let chords = [];
     let elements = document.querySelector('#chord-menu').querySelectorAll('.gui-chord');
@@ -1314,14 +1264,14 @@ function GUItoText() {
     //patterns
     text += `\n;${document.querySelector('#pattern').value};`;
     let repeat = document.querySelector('#repeat-pattern').value;
-    if (repeat) { text += `\n:${repeat}:`; } // + ':\n'; }
+    if (repeat) { text += `\n:${repeat}:`; }
     //this will go through the sections in the order of the selector buttons, allowing the user to rearrange the sections in the gui
     document.querySelectorAll('.section-selector').forEach(function(selector, i) {
         //start each section with a line break, the name of the section, and an opening bracket
         let label = selector.innerHTML;
         text += `\n${label}[`;
         //the id may be different from the button label, but it will still be associated with the same section content
-        //!! ^ this is no longer the case
+        //!! ^ this is no longer the case, so would it be easier now to draw from the section itself and not the selector?
         //magic number 17 = the length of 'section-selector-', which is the irrelevant part of the id
         let id = `#section-${selector.id.slice(17)}`;
         let section = document.querySelector(id);
@@ -1390,6 +1340,7 @@ function textToSymbol(str, reversed = false) {
     return str;
 }
 
+//make it impossible to alter most GUI elements during playback as they would have unpredictable, glitchy effects
 function disableGUI() {
     for (let id of ['text-wrapper', 'gui-wrapper']) {
         for (let wrapper of document.querySelectorAll('#' + id)) {  
@@ -1446,6 +1397,8 @@ let audio = {
     bass: undefined,
     treble: [],
     //cymbals and/or other percussion
+
+    //envelope levels
     gain: {
         perc: undefined,
         bass: undefined,
@@ -1467,6 +1420,7 @@ let audio = {
         this.context = new AudioContext();
         this.gain.master = this.context.createGain();
 
+        //set envelopes to default values as defined above
         for (let key in this.gain) {
             if (key=='master') {
                 this.gain[key].connect(this.context.destination);
@@ -1489,7 +1443,6 @@ let audio = {
         this.bass = new Note(audio.frequency(root, 2), 'bass');
 
         //convert chord intervals into absolute notes
-        //let treble = chord.guides.concat(chord.auxExp).map(function(el) {
         //!!anything more than bass and guide-tones sounds really busy. Maybe move auxExp to a different octave?
         let treble = chord.guides.map(el => (encodeInterval(el) + root) % 12);
         // create array of oscillators to play treble
@@ -1510,7 +1463,7 @@ let audio = {
 
     //obtain frequency in Hz from encoded (numbered) note
     frequency: function(note, octave) {
-        //since my scale starts at A, but standard octave numbering starts at C
+        //since my scale starts at A, but standard octave numbering starts at C (maybe change that elsewhere to fit the standard?)
         if (note%12 > 2) { octave-=1; }
         //formula for converting standard MIDI numbers (where C4==60 and each semitone==1) to absolute frequency:
         //  f = Math.pow(2,(m-69)/12*440)
@@ -1522,10 +1475,11 @@ let audio = {
         let context = this.context;
         let envelope = context.createGain();
 
-        //!!non-integer harmonics, except for metronome (change this?)
+        //!!non-integer harmonics, except for metronome (make metronome enharmonic as well?)
         let ratios = metronome1? [100] : metronome ? [50] : [2,3,4.16,5.43,6.79,8.21];
-        let fundamental = snare || cymbal ? 40 : 20; //not synthesized, just used for calculations
-        //make a way to cut off open cymbal sounds
+        //!!not synthesized, just used for calculations... I guess so the harmonics are closer together?
+        let fundamental = snare || cymbal ? 40 : 20; 
+        //!!make a way to cut off open cymbal sounds
         let duration = now + (cymbal ? open ? 10 : .3 : snare? .2 : .5);
         let dropoff = now + .2;
 
@@ -1626,7 +1580,7 @@ class Note {
             partialGain.connect(noteGain);
 
             let osc = audio.context.createOscillator();
-            // fundamental and even-numbered overtones
+            // fundamental and even-numbered overtones; I just like this sound better than other options I've tried
             osc.frequency.value = fundamental * (i == 0 ? 1 : 2 * i);
             osc.type = 'triangle';
             osc.connect(partialGain);

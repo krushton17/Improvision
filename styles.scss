@@ -1,35 +1,4 @@
 // all deprecated, but still referenced in the cross-browser compatibility settings 
-:root {
-    --main-bg-color: black;
-
-    --main-text-color: white;
-    --main-font: 16px 'Varela Round', Helvetica, sans-serif;
-    --mono-font: 20px 'Cutive Mono', Courier, monospace;
-
-    --border-radius: 5px;
-    --grid-gap: .5rem;
-
-    --input-bg-color: hsl(280, 61%, 35%);
-    --input-text-color: white;
-    --input-border: 1.5px solid turquoise;
-    --input-hover-color: hotpink;
-    --input-active-color: turquoise;
-    --hover-bg-color: gray;
-    --hover-text-color: black;
-
-    --textbox-bg-color: rgb(44, 36, 36);
-    --textbox-text-color: lightcyan;
-
-    --range-thumb-height: 1rem;
-    --range-thumb-width: .5rem;
-
-    --section-bg-color: hsl(280, 30%, 15%);
-    --section-border: 2px solid black;
-    --gui-text-color: black;
-
-}
-
-
 
 // general-----------------------------------------------------------
 $main-bg-color: black;
@@ -101,10 +70,6 @@ $current-chord-color: hotpink;
     border-radius: $border-radius;
 }
 
-html {
-    /* height: 100vh;
-    width: 100vw; */
-}
 body {
     font: $main-font;
     color: $main-text-color;
@@ -112,9 +77,7 @@ body {
 
     //scss is compiled and can't use run-time variables; this bypasses that problem
     height: unquote("calc(100vh - #{$grid-gap} * 2)");
-    //100vh - $grid-gap * 2;
-    /* seems to be unnecessary */
-    /* width: calc(100vw - var(--grid-gap) * 2); */
+
     margin: $grid-gap;
     box-sizing: border-box;
 
@@ -145,7 +108,6 @@ body {
 /*diagram-----------------------------------------------*/
 #diagram {
     overflow: hidden;
-    // background-color: black;
     
     grid-area: diagram;
     
@@ -204,14 +166,16 @@ body {
     stroke: $auxImp-stroke;
 }
 
-/*inputs-------------------------------------------*/
+// inputs-----------------------------------------------
 input, textarea, .button {
     -webkit-appearance: none;
     display: inline-block;
     vertical-align: middle;
-    margin: auto;
 
     box-sizing: border-box;
+    margin: auto;
+    padding: $button-padding; 
+
     height: $input-height;
     min-width: $input-min-width;
 
@@ -220,19 +184,19 @@ input, textarea, .button {
     @extend %border;
 
     color: $button-text-color;
-    //text-align: center;
     font: inherit;
-    padding: $button-padding; 
+
 }
 input[type=button].symbol, .button >.symbol {
-    font-size: $button-symbol-font-size;
     margin: $button-symbol-margin;
+
+    font-size: $button-symbol-font-size;
 }
 input[type=checkbox]:hover, input[type=button]:hover, .button:hover {
-    background-color: $button-hover-color;
     cursor: pointer;
+    background-color: $button-hover-color;
 }
-input[type=button].active, .button.active, input[type=checkbox]:checked {
+input[type=checkbox]:checked, input[type=button].active, .button.active {
     background-color: $button-active-color;
 }
 textarea, input[type=text], input[type=number] {
@@ -243,7 +207,7 @@ textarea, input[type=text], input[type=number] {
     font: $mono-font;
     color: $textbox-text-color;
 }
-/* for Firefox */
+// Firefox - untested!
 input[type='number'] {
     -moz-appearance:textfield;
 }
@@ -254,7 +218,7 @@ input[type=number]::-webkit-outer-spin-button {
 .button > span {
     display: inline-block;
 }
-// these seem to specific to bother with variables...
+// these seem too specific to bother with variables...
 .button-mono {
     font: $mono-font;
     font-size: 1.25rem;
@@ -277,11 +241,10 @@ input[type=number]::-webkit-outer-spin-button {
     margin-top: -.18rem;
     vertical-align: top;
 }
-/* range inputs------------------- */
-
+// range inputs------------------------------
 input[type=range] {
     -webkit-appearance: none;
-    /* so the other input defaults don't affec this one */
+    // so the other input settings don't apply to ranges
     background: none;
     border: none;
     margin: auto;
@@ -289,6 +252,7 @@ input[type=range] {
   input[type=range]:focus {
     outline: none;
   }
+// need to be migrated to scss variables
   input[type=range]::-webkit-slider-runnable-track {
     cursor: pointer;
     height: calc(var(--range-thumb-height) / 2);
@@ -387,10 +351,8 @@ input[type=range] {
 /* chord menu---------------------------------------------- */
 #gui-wrapper {
     grid-area: gui;
-
     min-height: 0;
 
-    //@extend %border;
     border: $border-secondary;
     border-radius: $border-radius;
 
@@ -410,14 +372,14 @@ input[type=range] {
 
     border-left: $border;
     border-color: $border-color-secondary;
+
     padding: $grid-gap 0;
 
     @extend %grid;
-    //grid-template-rows: 1fr auto;
 }
-#add-chord {
+#add-chord, #trash {
+    //centered with respect to the chords in the chord menu
     margin-left: $grid-gap;
-    //accounts for the width of the chord-menu scrollbar
     margin-right: $scrollbar-padding + $scrollbar-thumb-width;
 }
 #chord-menu {
@@ -438,12 +400,9 @@ input[type=range] {
 #trash {
     cursor: move;
 
-    //centered with respect to the chords in the chord menu
     margin-top: -.25rem;
-    margin-right: $scrollbar-padding + $scrollbar-thumb-width;
-    margin-left: $grid-gap;
-
     height: 2rem;
+
     font-size: 2rem;
     color: lightseagreen;
     text-align: center;
@@ -487,7 +446,6 @@ input[type=range] {
     margin: 0 $grid-gap/2;
 }
 #add-tab > * {
-    //font-size: $inline-symbol-font-size;
     margin-top: -.3rem;
 }
 #pattern {
@@ -533,7 +491,6 @@ input[type=range] {
     margin: 0 $grid-gap/2;
     padding: 0 $grid-gap/2;
     background-color: $editor-bg-color;
-    // vertical-align: middle;
 }
 .gui-handle, .gui-add-line, .gui-add-measure {
     cursor: move;
@@ -567,35 +524,27 @@ input[type=range] {
 }
 .gui-beat {
     display: inline-block;
+    position: relative;
+    vertical-align: middle;
+
     min-width: $input-height/2;
     height: $input-height;
 
-    // @extend %border;
-    // border-left: 1px solid white;
-    // border-right: 1px solid lightseagreen;
     padding: $grid-gap $grid-gap/2;
-    // padding: $grid-gap;
-    vertical-align: middle;
-
-    position: relative;
 }
 .gui-beat:after {
-    // width: 1rem;
-    // height: $input-height/4;
-    //@extend %border;
-    border: $border-secondary;
-    border-radius: $border-radius;
     content: '';
-    //font-size: $inline-symbol-font-size;
-    color: lightseagreen;
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translateX(-50%) translateY(-50%);
     z-index: 1;
-    // vertical-align: middle;
-    // transform: translateY(50%);
     padding: $input-height/8 $input-height/8;
+
+    border: $border-secondary;
+    border-radius: $border-radius;
+
+    color: lightseagreen;
 }
 .gui-beat:hover:after {
     content: '+';
@@ -624,7 +573,6 @@ input[type=range] {
     background-color: $button-hover-color;
 }
 .sort-select, .sort-drag {
-    //background-color: $button-active-color;
 }
 .sort-ghost {
     background-color: $button-hover-color;
@@ -639,12 +587,6 @@ input[type=range] {
 .gui-beat.gui-current::after {
     border-color: $current-chord-color !important;
 }
-//override hover settings
-//should be unnecessary now since all mouse events are blocked
-// .gui-measure > .gui-beat.gui-current::after {
-//     content: '' !important;
-//     @extend %border;
-// }
 
 /* text editor ---------------------------------*/
 #text-wrapper {
@@ -661,9 +603,8 @@ input[type=range] {
 }
 /* song mode playback dashboard */
 #playback-dash {
-    /* grid-area: dashboard; */
     @extend %border;
-    //border-color: $auxExp-stroke;
+
     padding: $grid-gap 0;
 
     display: flex;
@@ -685,8 +626,6 @@ input[type=range] {
     display: none;
 }
 #repeat > * {
-    // element currently in playback dash
-    // grid-area: repeat;
     margin: -.3rem 0;
 }
 #counter {
@@ -734,7 +673,7 @@ input[type=range] {
 }
 #tempo {
     grid-area: tempo;
-    //width of longest time signature (100+) plus a comfortable padding
+    //width of longest tempo (3 digits) plus a comfortable padding
     width: 4.5ch;
     text-align: right;
 }
@@ -754,18 +693,3 @@ input[type=range] {
     resize: none;
     text-align: left;
 }
-
-
-/*
-&#x1d11e;
-&#x1d122;
-&#x1f941;
-&#x1f568;
-&#x1f569;
-&flat;
-&sharp;
-&natural;
-&deg;
-&#x1d1a9;
-*/
-
