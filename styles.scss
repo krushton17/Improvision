@@ -693,3 +693,47 @@ input[type=range] {
     resize: none;
     text-align: left;
 }
+
+
+
+// logo
+$logo-staff-color: lightseagreen;
+$logo-bg-color: $editor-bg-color;
+
+#main-menu {
+    cursor: help;
+
+    position: fixed;
+    top: $grid-gap;
+    right: $grid-gap;
+    // width: 8rem;
+
+    background-color: $logo-bg-color;
+    // padding: $grid-gap;
+    @extend %border;
+    // border-color: lightseagreen;
+}
+#main-menu > * {
+    margin: $grid-gap;
+    width: 8rem;
+}
+
+#staff-bot *, #staff-top *, #Repeat2 rect, #Repeat2 line {
+    stroke: $logo-staff-color;
+    fill: $logo-staff-color;
+}
+#Repeat2 circle {
+    stroke: none;
+    fill: $logo-staff-color;
+}
+#text-L-top *, #text-L * {
+    stroke: lightseagreen;
+    fill: lightcyan;
+}
+#text-R-top *, #text-R * {
+    stroke: hotpink;
+    fill: rgb(255, 224, 246);
+}
+#text-mask * {
+    fill: $logo-bg-color;
+}
