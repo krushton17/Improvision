@@ -67,5 +67,5 @@ SOFTWARE.
 
 Inspired/influenced by:
 
-* [Chordbot](http://chordbot.com/)
+* [Chordbot](https://chordbot.com/)
 * [*Chord Tone Soloing* by Barrett Tagliarino](https://smile.amazon.com/gp/product/0634083651/ref=oh_aui_search_detailpage?ie=UTF8&psc=1)
