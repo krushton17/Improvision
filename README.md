@@ -43,7 +43,7 @@ As of August 2018, Improvision has only been tested in Google Chrome. If you exp
 
 ## License
 
-Copyright (c) 2018 Kevin Rushton [contact@improvision.app](contact@improvision.app)
+Copyright (c) 2018 Kevin Rushton [contact@improvision.app](mailto:contact@improvision.app)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
