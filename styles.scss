@@ -628,6 +628,9 @@ input[type=range] {
 #repeat > * {
     margin: -.3rem 0;
 }
+#swing > img {
+    height: 100%;
+}
 #counter {
     grid-area: counter;
     /* set for max counter width (4/4:16chars) */
@@ -685,6 +688,9 @@ input[type=range] {
 #upload {
     display: none;
 }
+#text-editor-wrapper {
+    height: 100%;
+}
 #text-editor {
     //arbitrary
     min-width: 30ch;
@@ -736,4 +742,38 @@ $logo-bg-color: $editor-bg-color;
 }
 #text-mask * {
     fill: $logo-bg-color;
+}
+
+
+// tooltips ------------------
+.has-tooltip::before {
+    visibility: hidden; 
+    opacity: 0;
+    transition: none;
+
+    position: absolute;
+    z-index: 4;
+    // transform: translateY(2rem);
+
+    background-color: $logo-bg-color;
+    @extend %border;
+
+    max-width: 25ch;
+    top: 3.5rem;
+    right: $grid-gap;
+    padding: $grid-gap;
+
+    font: $main-font;
+    text-align: left;
+
+    content: attr(data-tooltip);
+}
+//doesn't work for text inputs
+.has-tooltip:hover::before {
+    visibility: visible;
+    opacity: 1;
+
+    transition-property: visibility, opacity;
+    transition-delay: 1s;
+    transition-duration: .5s;
 }

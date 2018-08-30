@@ -1600,3 +1600,22 @@ class Note {
         }
     }
 }
+
+
+
+// Tooltips --------------------------------------------
+
+//load tooltips from file
+let tooltips = {};
+d3.dsv('%', 'tooltips.csv', function(data) {
+    // console.log(data);
+    tooltips[data.selector] = data.tooltip;
+    addTooltip(data.selector);
+});
+
+//apply to objects
+function addTooltip(selector) {
+    d3.selectAll(selector)
+        .attr('data-tooltip', tooltips[selector])
+        .classed('has-tooltip', true)
+}

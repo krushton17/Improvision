@@ -1,1 +1,16 @@
-'.gui-chord','drag me mothafucka','boobs'
+selector%tooltip
+#play%Play the current song. If the song was paused, resumes playback from the beginning of the current measure. During playback, most GUI elements are disabled to prevent interference.
+#pause%Pauses playback. Playback will resume at the beginning of the current measure.
+#stop%Stops playback. Playback will resume at the beginning of the song.
+#repeat%Toggles repeat mode. If activated, playback will follow the pattern specified by the “Repeat Pattern” field and will loop indefinitely. Otherwise, playback will follow the pattern specified by the “Pattern” field and will stop at the end of the song.
+#swing%Toggles swing beats. If activated, each beat will be divided into triplets rather than straight eighth notes. Has no effect on songs using compound time signatures (e.g. 6/8).
+#title-label%Title of the current song.
+#by-label%Writer of the current song.
+#key-label%Key signature of the current song.
+#meter-label%Time signature of the current song. Written as a fraction, with the numerator signifying the number of beats per measure, and the denominator signifying what type of note constitutes a single beat. Aliases such as “C” for Common Time are not supported.
+#tempo-label%Playback tempo in beats per minute.
+#upload-label%Upload a text file to play a song saved on your local file storage.
+#download%Save the current song as a text file on your local file storage.
+#text-to-gui%Text to GUI: Apply any text-based edits to the GUI. This is done automatically when uploading a new song.
+#gui-to-text%GUI to text: Apply any GUI-based edits to the text editor.
+#text-editor-wrapper%Use this area to edit the current song as a text file. Changes here will not affect the GUI until pressing the “Text to GUI” button above. Changes to the GUI will not affect the text area until pressing the “GUI to Text” button above, or when pressing the play button.

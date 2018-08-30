@@ -23,7 +23,9 @@ Improvision is a web app designed to help learn and practice chord-tone guitar i
 
 ## Getting Started
 
-Improvision is currently hosted [online](https://improvision.app). Feel free to download and/or fork the project on GitHub if you like.
+Improvision is currently hosted [online](https://improvision.app).
+
+Feel free to download and/or fork the project on GitHub if you like. (Note: I am not a professional programmer and this is my first major project on GitHub, so my code and git flow are very much works in progress.)
 
 ### Prerequisites
 
@@ -31,7 +33,7 @@ As of August 2018, Improvision has only been tested in Google Chrome. If you exp
 
 ### Guide
 
-[GUIDE.md]
+[GUIDE.md](GUIDE.md)
 
 ## Built With
 
@@ -41,7 +43,7 @@ As of August 2018, Improvision has only been tested in Google Chrome. If you exp
 
 ## License
 
-Copyright (c) 2018 Kevin Rushton [contact@improvision.app]
+Copyright (c) 2018 Kevin Rushton [contact@improvision.app](contact@improvision.app)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
