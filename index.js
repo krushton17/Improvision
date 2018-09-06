@@ -244,15 +244,16 @@ let normalize = function(chord, root) {
 class Song {
     constructor(text) {
         //!!add validation & errors
-        let header = text.slice(text.indexOf('(')+1, text.indexOf(')')).split(',');
-        this.title = header[0];
-        this.key = header[1];
-        this.tempo = header[2];
+        this.title = text.match(/title\(.*\)/)[0].slice(6,-1)
+        this.by = text.match(/by\(.*\)/)[0].slice(3,-1)
+        this.key = text.match(/key\(.*\)/)[0].slice(4,-1)
+        this.tempo = text.match(/tempo\(\d*\)/)[0].slice(6,-1)
+        let meter = text.match(/meter\(.*\)/)[0].slice(6,-1);
         this.meter = (function() {
             //numerator
-            let beatsPerMeasure = +header[3].match(/^\d+/)[0];
+            let beatsPerMeasure = +meter.match(/^\d+/)[0];
             //denominator
-            let beatUnits = +header[3].match(/\d+$/)[0];
+            let beatUnits = +meter.match(/\d+$/)[0];
             if (beatUnits == 8) {
                 beatsPerMeasure /= 3;
             }
@@ -980,7 +981,7 @@ let editorGUI = {
         d3.selectAll('.gui-chord').remove();
 
         //header
-        ['title','key','tempo'].forEach(function(e) {
+        ['title','key','by','tempo'].forEach(function(e) {
             document.querySelector(`#${e}`).value = song[e];
         });
         document.querySelector('#meter').value = song.meter.beatsPerMeasure + '/' + song.meter.beatUnits;
@@ -1047,7 +1048,7 @@ function newLine(parent) {
         .attr('class', 'gui-line')
     lineBox.append('span')
         .attr('class', 'gui-handle')
-        .html('\u{2195}');
+        .html('\u{2723}');
     lineBox.append('span')
         .attr('class', 'gui-add-measure')
         .html('+')
@@ -1064,7 +1065,7 @@ function newMeasure(parent, measure) {
         .attr('class', 'gui-measure')
     measureBox.append('span')
         .attr('class', 'gui-handle')
-        .html('\u{2195}');
+        .html('\u{2723}');
     //loop through beats in measure
     for (let i = 0; i < song.meter.beatsPerMeasure; i++) {
         let beatBox = measureBox.append('span')
@@ -1093,7 +1094,8 @@ function newMeasure(parent, measure) {
 function newChord(parent, chord) {
     let chordBox = parent.append('span')
         .attr('class', 'gui-chord')
-        .html(textToSymbol(chord))
+        // .html(textToSymbol(chord))
+        .html(chord)
         //event listeners
         .on('dblclick', function() { makeEditable(true, this); })
         .on('keydown', function() { notEditableKeyDown(d3.event); })
@@ -1176,9 +1178,9 @@ editorGUI.setup();
 
 //allow user to edit some GUI elements' text
 function makeEditable(symbols, element) {
-    if (symbols) {
-        element.innerHTML = textToSymbol(element.innerHTML, true);
-    }   
+    // if (symbols) {
+    //     element.innerHTML = textToSymbol(element.innerHTML, true);
+    // }   
     element.contentEditable = 'true';
     element.focus();
     //select all text if there is already a name
@@ -1197,7 +1199,8 @@ function notEditableKeyDown(evt) {
 
 //reverse everything from the makeEditable function
 function notEditable(symbols, element) {
-    let text = symbols ? textToSymbol(element.innerHTML, false) : element.innerHTML;
+    // let text = symbols ? textToSymbol(element.innerHTML, false) : element.innerHTML;
+    let text = element.innerHTML;
     if (symbols) {
         element.innerHTML = text;
     }
@@ -1259,12 +1262,18 @@ function GUItoText() {
     //!!add validation
 
     //convert GUI elements to text
-    //header
-    let text = `(${['title','key','tempo','meter'].map(e => document.querySelector(`#${e}`).value).join(',')})`;
+    //metadata
+    let text = ['title','by','key','tempo','meter']
+        .map(
+        e => e+'('+document.querySelector('#'+e).value+')')
+        .join('\n')
+        + '\n';
     //patterns
     text += `\n;${document.querySelector('#pattern').value};`;
     let repeat = document.querySelector('#repeat-pattern').value;
     if (repeat) { text += `\n:${repeat}:`; }
+
+    text += '\n';
     //this will go through the sections in the order of the selector buttons, allowing the user to rearrange the sections in the gui
     document.querySelectorAll('.section-selector').forEach(function(selector, i) {
         //start each section with a line break, the name of the section, and an opening bracket
@@ -1287,7 +1296,8 @@ function GUItoText() {
                     //chord = the actual draggable chord object, or undefined if the measure is empty
                     let chord = beat.querySelector('.gui-chord');
                     if (chord) {
-                        measureText += textToSymbol(chord.innerHTML, true);
+                        //measureText += textToSymbol(chord.innerHTML, true);
+                        measureText += chord.innerHTML;
                         chords += 1;
                         if (i == 0) { chordOnFirst = true; }
                     } else {
@@ -1605,17 +1615,38 @@ class Note {
 
 // Tooltips --------------------------------------------
 
-//load tooltips from file
-let tooltips = {};
-d3.dsv('%', 'tooltips.csv', function(data) {
-    // console.log(data);
-    tooltips[data.selector] = data.tooltip;
-    addTooltip(data.selector);
-});
+// //load tooltips from file
+// let tooltips = {};
+// d3.dsv('%', 'tooltips.csv', function(data) {
+//     // console.log(data);
+//     tooltips[data.selector] = data.tooltip;
+//     addTooltip(data.selector);
+// });
 
-//apply to objects
-function addTooltip(selector) {
-    d3.selectAll(selector)
-        .attr('data-tooltip', tooltips[selector])
-        .classed('has-tooltip', true)
+// //apply to objects
+// function addTooltip(selector) {
+//     d3.selectAll(selector)
+//         .attr('data-tooltip', tooltips[selector])
+//         .classed('has-tooltip', true)
+// }
+
+
+// Modal -------------------------------------------------
+
+function closeModal() {
+    d3.select('#modal')
+        .style('opacity', 1)
+        .transition()
+            .style('opacity', 0)
+            .duration(1000)
+            .transition()
+                .remove();
+    d3.select('html')
+        .on('keydown', null);
 }
+
+//!!doesn't seem to cause errors if I just do this whether or not the object actually exists
+// if (document.querySelector('#modal')) {
+    d3.select('html')
+        .on('keydown', closeModal)
+// }

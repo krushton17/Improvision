@@ -4,9 +4,13 @@
 $main-bg-color: black;
 
 $main-text-color: lightcyan;
-$main-font: 16px 'Varela Round', Helvetica, sans-serif;
-$mono-font: 20px 'Cutive Mono', Courier, monospace;
+$main-text-size: 16px;
+$main-font: $main-text-size 'Varela Round', Helvetica, sans-serif;
+$mono-font: $main-text-size*1.25 'Cutive Mono', Courier, monospace;
 $inline-symbol-font-size: 1.5rem;
+
+$link-color: lightseagreen;
+$emphasis-color: hotpink;
 
 $border: 1.5px solid turquoise;
 $border-secondary: 1.5px solid lightseagreen;
@@ -496,7 +500,6 @@ input[type=range] {
     cursor: move;
     padding: 0 $grid-gap/4;
 
-    font-size: $inline-symbol-font-size;
     display: inline-block;
     color: lightseagreen;
     vertical-align: middle;
@@ -508,19 +511,21 @@ input[type=range] {
     cursor: pointer;
     order: 1;
     margin-left: $grid-gap/2; 
+
+    font-size: $inline-symbol-font-size;
 }
 .gui-add-line {
     margin-top: $grid-gap;
 }
 .gui-handle {
-    padding-top: .25rem;
-    padding-bottom: .5rem;
+    font-size: $inline-symbol-font-size*.75;
 }
 .gui-measure > .gui-handle {
     border-right: $border;
     border-color: lightseagreen;
     margin-left: -.25rem;
     margin-right: .25rem;
+    padding: .5rem .1rem;
 }
 .gui-beat {
     display: inline-block;
@@ -628,6 +633,9 @@ input[type=range] {
 #repeat > * {
     margin: -.3rem 0;
 }
+#volume, #swing {
+    display: none;
+}
 #swing > img {
     height: 100%;
 }
@@ -707,7 +715,7 @@ $logo-staff-color: lightseagreen;
 $logo-bg-color: $editor-bg-color;
 
 #main-menu {
-    cursor: help;
+    // cursor: help;
 
     position: fixed;
     top: $grid-gap;
@@ -720,6 +728,9 @@ $logo-bg-color: $editor-bg-color;
     // border-color: lightseagreen;
 }
 #main-menu > * {
+    // doesn't work
+    // cursor: help;
+
     margin: $grid-gap;
     width: 8rem;
 }
@@ -776,4 +787,42 @@ $logo-bg-color: $editor-bg-color;
     transition-property: visibility, opacity;
     transition-delay: 1s;
     transition-duration: .5s;
+}
+
+#modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    background-color: black;
+    z-index: 5;
+}
+#modal-content {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50ch;
+    max-width: 80%;
+
+    @extend %border;
+    margin: auto;
+    padding: $grid-gap + .5rem;
+    padding-bottom: $grid-gap;
+
+    background-color: $editor-bg-color;
+    font-size: $main-text-size*1.5;
+}
+#modal-content > ul {
+    margin-bottom: 0;
+}
+a {
+    color: $link-color;
+}
+li {
+    margin: .5rem 0;
+}
+.emphasis {
+    color: $emphasis-color;
 }
